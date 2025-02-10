@@ -8,7 +8,9 @@
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
-    "type-check": "vue-tsc --build"
+    "type-check": "vue-tsc --build",
+    "predeploy": "pnpm build",
+    "deploy": "gh-pages -d dist -r https://github.com/NanChen042/deepseek.git -b gh-pages"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
@@ -24,6 +26,7 @@
     "@vitejs/plugin-vue": "^5.2.1",
     "@vitejs/plugin-vue-jsx": "^4.1.1",
     "@vue/tsconfig": "^0.7.0",
+    "gh-pages": "^6.3.0",
     "npm-run-all2": "^7.0.2",
     "typescript": "~5.7.3",
     "unplugin-auto-import": "^19.0.0",
