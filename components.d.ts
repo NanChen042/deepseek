@@ -35,4 +35,7 @@ declare module 'vue' {
     TypeWriter: typeof import('./src/components/chat/TypeWriter.vue')['default']
     WelcomeItem: typeof import('./src/components/WelcomeItem.vue')['default']
   }
+  export interface ComponentCustomProperties {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
+  }
 }

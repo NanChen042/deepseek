@@ -36,7 +36,7 @@ const handleModelChange = (model: ModelType) => {
   aiService.updateConfig({
     model,
     stream: true,
-    system_message: model === ModelType.Reasoner 
+    system_message: model === ModelType.Reasoner
       ? '你是一个专注于逻辑推理和问题分析的Deepseek。'
       : '你是一个友好的中文助手。'
   })
@@ -50,31 +50,49 @@ const handleSend = async (message: string) => {
   })
 
   loading.value = true
-  
+
   try {
-    // 添加一个空的助手消息用于流式更新
+    // 添加一个空的助手消息用于更新
     const assistantMessage = {
       role: 'assistant' as const,
       content: ''
     }
     messages.value.push(assistantMessage)
 
-    // 根据当前模型选择使用不同的调用方式
-    const streamCallback = (chunk: string) => {
-      assistantMessage.content += chunk
+    // 发起请求
+    await aiService.startChat(messages.value.slice(0, -1))
+
+    // 开始轮询
+    const pollResponse = async () => {
+      try {
+        const response = await aiService.getResponseProgress()
+
+        if (response.status === 'processing') {
+          // 更新部分内容
+          if (response.partial_content) {
+            assistantMessage.content = response.partial_content
+          }
+          // 继续轮询
+          setTimeout(pollResponse, 500)
+        } else if (response.status === 'completed') {
+          // 更新最终内容
+          assistantMessage.content = response.content || ''
+          loading.value = false
+        }
+      } catch (error) {
+        console.error('Polling error:', error)
+        ElMessage.error('获取回复失败，请重试')
+        loading.value = false
+      }
     }
 
-    if (aiService.config.model === ModelType.Reasoner) {
-      await aiService.streamReason(message, streamCallback)
-    } else {
-      await aiService.streamChat(messages.value.slice(0, -1), streamCallback)
-    }
+    // 开始轮询
+    pollResponse()
+
   } catch (error) {
     console.error('Error:', error)
     ElMessage.error('发送消息失败，请重试')
-    // 发生错误时移除最后的助手消息
-    messages.value.pop()
-  } finally {
+    messages.value.pop() // 发生错误时移除最后的助手消息
     loading.value = false
   }
 }
@@ -95,4 +113,4 @@ const clearChat = () => {
   overflow: hidden;
   box-sizing: border-box;
 }
-</style> 
+</style>

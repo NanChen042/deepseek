@@ -10,16 +10,25 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      meta: {
+        keepAlive: true
+      }
     },
     {
       path: '/chat',
       name: 'chat',
-      component: ChatView
+      component: ChatView,
+      meta: {
+        keepAlive: true
+      }
     },
     {
       path: '/stream',
       name: 'stream',
-      component: StreamView
+      component: StreamView,
+      meta: {
+        keepAlive: true
+      }
     }
   ],
 })

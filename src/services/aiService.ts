@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 // 定义消息类型
 interface ChatCompletionRequestMessage {
@@ -9,8 +10,17 @@ interface ChatCompletionRequestMessage {
 
 // API 配置
 const API_CONFIG = {
-  baseURL: 'https://api.deepseek.com',
+  baseURL: 'https://api.deepseek.com/v1',  // 修改为完整的v1路径
   apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY
+}
+
+// 添加调试信息
+console.log('API Key configured:', !!API_CONFIG.apiKey)
+console.log('Base URL:', API_CONFIG.baseURL)
+
+// 可以添加一个检查
+if (!API_CONFIG.apiKey) {
+  console.error('API密钥未配置，请在.env文件中设置VITE_DEEPSEEK_API_KEY')
 }
 
 // 模型类型
@@ -26,6 +36,9 @@ interface ChatRequestConfig {
   max_tokens?: number
   stream?: boolean
   system_message?: string
+  presence_penalty?: number
+  frequency_penalty?: number
+  top_p?: number
 }
 
 // 默认配置
@@ -47,9 +60,16 @@ interface ChatResponse {
   choices: Array<{
     message: {
       content: string
-      reasoning_content?: string  // 推理模型特有的思维链内容
+      role: string
     }
+    finish_reason: string
   }>
+}
+
+interface ResponseProgress {
+  status: 'processing' | 'completed'
+  partial_content?: string
+  content?: string
 }
 
 /**
@@ -57,6 +77,10 @@ interface ChatResponse {
  */
 class AIChatService {
   public config: ChatRequestConfig
+  private currentRequestId: string | null = null
+  private currentResponse: string = ''
+  private currentIndex: number = 0
+  private isGenerating: boolean = false
 
   constructor(config: Partial<ChatRequestConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
@@ -69,18 +93,22 @@ class AIChatService {
    */
   async chat(messages: ChatCompletionRequestMessage[]) {
     try {
+      const requestBody = {
+        messages: [
+          { role: 'system', content: this.config.system_message },
+          ...messages
+        ],
+        model: this.config.model,
+        temperature: this.config.temperature,
+        max_tokens: this.config.max_tokens,
+        stream: this.config.stream
+      }
+
+      console.log('Sending request:', requestBody)
+
       const response = await axios.post<ChatResponse>(
-        `${API_CONFIG.baseURL}/v1/chat/completions`,
-        {
-          model: this.config.model,
-          messages: [
-            { role: 'system', content: this.config.system_message },
-            ...messages
-          ],
-          temperature: this.config.temperature,
-          max_tokens: this.config.max_tokens,
-          stream: this.config.stream
-        },
+        `${API_CONFIG.baseURL}/chat/completions`,
+        requestBody,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -89,45 +117,14 @@ class AIChatService {
         }
       )
 
-      // 添加响应数据结构检查
-      if (!response.data?.choices?.[0]?.message) {
-        console.error('Invalid API response:', response.data)
+      if (!response.data?.choices?.[0]?.message?.content) {
         throw new Error('API 返回数据格式错误')
       }
 
-      const message = response.data.choices[0].message
-
-      // 如果是推理模型，返回包含思维链的完整响应
-      if (this.config.model === ModelType.Reasoner) {
-        return `思维过程：\n${message.reasoning_content || '无'}\n\n最终答案：\n${message.content}`
-      }
-
-      return message.content
+      return response.data.choices[0].message.content
     } catch (error: any) {
-      console.error('Chat API error:', error)
-
-      // 处理不同的错误状态码
-      switch (error.response?.status) {
-        case 400:
-          throw new Error('请求格式错误，请检查输入参数')
-        case 401:
-          throw new Error('API密钥无效或已过期，请检查您的API密钥设置')
-        case 402:
-          throw new Error('账户余额不足，请及时充值')
-        case 422:
-          throw new Error('请求参数错误：' + (error.response?.data?.message || '请检查输入参数'))
-        case 429:
-          throw new Error('请求速率超限，请稍后重试')
-        case 500:
-          throw new Error('服务器内部错误，请稍后重试')
-        case 503:
-          throw new Error('服务器繁忙，请稍后重试')
-        default:
-          if (error.message === 'API 返回数据格式错误') {
-            throw error
-          }
-          throw new Error(error.response?.data?.message || '聊天服务出错了')
-      }
+      console.error('Chat error:', error.response?.data || error)
+      throw new Error(error.response?.data?.error?.message || '聊天服务出错了')
     }
   }
 
@@ -165,30 +162,31 @@ class AIChatService {
   // 流式聊天
   async streamChat(messages: ChatCompletionRequestMessage[], onChunk: (chunk: string) => void) {
     try {
-      const response = await fetch(`${API_CONFIG.baseURL}/v1/chat/completions`, {
+      const response = await fetch(`${API_CONFIG.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${API_CONFIG.apiKey}`
         },
         body: JSON.stringify({
-          model: this.config.model,
           messages: [
             { role: 'system', content: this.config.system_message },
             ...messages
           ],
-          temperature: this.config.temperature,
-          max_tokens: this.config.max_tokens,
-          stream: true,
-          presence_penalty: 0,
-          frequency_penalty: 0,
-          n: 1
+          model: this.config.model,
+          temperature: 0.7,
+          stream: true
         })
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || '聊天服务出错了')
+        const errorData = await response.json()
+        console.error('API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        })
+        throw new Error(errorData.message || '聊天服务出错了')
       }
 
       const reader = response.body?.getReader()
@@ -215,8 +213,8 @@ class AIChatService {
         }
       }
     } catch (error: any) {
-      console.error('Stream Chat API error:', error)
-      throw new Error(error.response?.data?.message || '聊天服务出错了')
+      console.error('Stream Chat API error details:', error)
+      throw new Error(error.message || '聊天服务出错了')
     }
   }
 
@@ -230,6 +228,48 @@ class AIChatService {
       this.config.model = previousConfig
     }
   }
+
+  // 开始一个聊天请求
+  async startChat(messages: ChatCompletionRequestMessage[]) {
+    try {
+      // 使用普通的chat请求获取完整响应
+      const response = await this.chat(messages)
+      this.currentResponse = response
+      this.currentIndex = 0
+      this.isGenerating = true
+      return true
+    } catch (error) {
+      throw error
+    }
+  }
+
+  // 模拟获取响应进度
+  async getResponseProgress(): Promise<ResponseProgress> {
+    if (!this.isGenerating) {
+      return {
+        status: 'completed',
+        content: this.currentResponse
+      }
+    }
+
+    // 每次返回一部分内容，模拟打字效果
+    const chunkSize = 4 // 每次返回4个字符
+    const partial = this.currentResponse.slice(0, this.currentIndex + chunkSize)
+    this.currentIndex += chunkSize
+
+    if (this.currentIndex >= this.currentResponse.length) {
+      this.isGenerating = false
+      return {
+        status: 'completed',
+        content: this.currentResponse
+      }
+    }
+
+    return {
+      status: 'processing',
+      partial_content: partial
+    }
+  }
 }
 
 // 导出服务实例
@@ -238,4 +278,44 @@ export const aiService = new AIChatService()
 // 为了保持向后兼容
 export const chatWithDeepSeek = (messages: ChatCompletionRequestMessage[]) => {
   return aiService.chat(messages)
+}
+
+// 在 handleModelChange 中添加日志
+const handleModelChange = (model: ModelType) => {
+  console.log('Changing model to:', model)
+  aiService.updateConfig({
+    model,
+    stream: true,
+    system_message: model === ModelType.Reasoner
+      ? '你是一个专注于逻辑推理和问题分析的Deepseek。'
+      : '你是一个友好的中文助手。'
+  })
+  console.log('Current config:', aiService.config)
+  ElMessage.success(`已切换至 ${model === ModelType.Reasoner ? '推理增强模型' : '通用对话模型'}`)
+}
+
+export const sendChatMessage = async (content: string, model: ModelType): Promise<string> => {
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: content,
+        model: model
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const data: ChatResponse = await response.json();
+    // @ts-ignore
+    return data.content;
+  } catch (error) {
+    console.error('Error sending chat message:', error);
+    throw error;
+  }
 }

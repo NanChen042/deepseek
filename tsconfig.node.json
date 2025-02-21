@@ -9,11 +9,10 @@
     "eslint.config.*"
   ],
   "compilerOptions": {
-    "noEmit": true,
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-
+    "composite": true,
     "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "Node",
+    "allowSyntheticDefaultImports": true,
     "types": ["node"]
   }
 }

@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref } from 'vue'
 import { aiService, ModelType } from '@/services/aiService'
 
 interface Message {
@@ -9,25 +8,13 @@ interface Message {
 }
 
 export const useChatStore = defineStore('chat', () => {
-  // 从 localStorage 获取历史消息
-  const getStoredMessages = (): Message[] => {
-    const stored = localStorage.getItem('chatHistory')
-    if (stored) {
-      return JSON.parse(stored)
-    }
-    return [{
-      role: 'assistant',
-      content: '你好！我是Deepseek，很高兴为您服务。'
-    }]
-  }
+  // 初始化消息列表，包含欢迎消息
+  const messages = ref<Message[]>([{
+    role: 'assistant',
+    content: '你好！我是Deepseek，很高兴为您服务。'
+  }])
 
-  const messages = ref<Message[]>(getStoredMessages())
   const loading = ref(false)
-
-  // 监听消息变化，保存到 localStorage
-  watch(messages, (newMessages) => {
-    localStorage.setItem('chatHistory', JSON.stringify(newMessages))
-  }, { deep: true })
 
   // 发送消息
   const sendMessage = async (message: string) => {
@@ -49,7 +36,7 @@ export const useChatStore = defineStore('chat', () => {
       })
     } catch (error) {
       console.error('Error:', error)
-      messages.value.pop()
+      messages.value.pop() // 发生错误时移除用户消息
       throw error // 让组件处理错误
     } finally {
       loading.value = false
@@ -62,7 +49,6 @@ export const useChatStore = defineStore('chat', () => {
       role: 'assistant',
       content: '你好！我是Deepseek，很高兴为您服务。'
     }]
-    localStorage.removeItem('chatHistory')
   }
 
   // 切换模型
@@ -71,7 +57,7 @@ export const useChatStore = defineStore('chat', () => {
       model,
       system_message: model === ModelType.Reasoner
         ? '你是一个专注于逻辑推理和问题分析的Deepseek。'
-        : '你是一个友好的中文助手,你的名字是SouthernWind。'
+        : '你是一个友好的中文助手。'
     })
   }
 

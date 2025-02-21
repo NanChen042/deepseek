@@ -4,13 +4,19 @@
     <div class="message-content">
       <!-- 头像区域 -->
       <div class="avatar-wrapper">
-        <el-avatar 
-          :size="40" 
-          :class="isUser ? 'user-avatar' : 'ai-avatar'"
+        <el-avatar
+          :size="40"
+          :class="[isUser ? 'user-avatar' : 'ai-avatar', {'ai-avatar-loading': loading && isLastMessage}]"
           :src="isUser ? userAvatar : undefined"
         >
           <el-icon v-if="isUser && !userAvatar"><User /></el-icon>
-          <el-icon v-if="!isUser"><Service /></el-icon>
+          <template v-if="!isUser">
+            <img
+              :src="deepseekLogo"
+              :class="{'rotate': loading && isLastMessage}"
+              alt="AI Avatar"
+            >
+          </template>
         </el-avatar>
       </div>
       <!-- 消息内容区域 -->
@@ -32,14 +38,19 @@
 </template>
 
 <script setup lang="ts">
-import { User, Service } from '@element-plus/icons-vue'
+import { User } from '@element-plus/icons-vue'
 import userAvatar from '@/assets/user.jpg'
+import deepseekLogo from '@/assets/deepseeklogo.svg'
+import { ref } from 'vue'
 
 // 组件属性定义
 defineProps<{
   content: string      // 消息内容
   isUser: boolean      // 是否为用户消息
   useTypewriter?: boolean  // 是否使用打字机效果
+  loading?: boolean    // 加载状态
+  isLastMessage?: boolean  // 是否为最后一条消息
+  timestamp?: number   // 添加时间戳属性
 }>()
 
 // 定义事件
@@ -50,7 +61,11 @@ defineEmits<{
 // 格式化时间方法
 const formatTime = () => {
   const now = new Date()
-  return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
+  const hours = now.getHours()
+  const minutes = now.getMinutes()
+  const ampm = hours >= 12 ? '下午' : '上午'
+  const formattedHours = hours % 12 || 12
+  return `${ampm} ${formattedHours}:${minutes.toString().padStart(2, '0')}`
 }
 </script>
 
@@ -78,18 +93,36 @@ const formatTime = () => {
 }
 
 .user-avatar {
+  background: white !important;
   box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
+  border: 1px solid rgba(64, 158, 255, 0.1);
+  overflow: hidden;  /* 确保圆角生效 */
+  border-radius: 50%;  /* 添加圆角 */
 }
 
 .user-avatar :deep(img) {
-  object-fit: cover;
-  width: 100%;
-  height: 100%;
+  width: 24px !important;
+  height: 24px !important;
+  object-fit: contain !important;
+  padding: 8px;
+  border-radius: 50%;  /* 添加圆角 */
 }
 
+/* AI头像样式 */
 .ai-avatar {
-  background: #67c23a;
-  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
+  background: white !important;
+  box-shadow: 0 2px 8px rgba(77, 107, 254, 0.2);
+  border: 1px solid rgba(77, 107, 254, 0.1);
+  overflow: hidden;  /* 确保圆角生效 */
+  border-radius: 50%;  /* 添加圆角 */
+}
+
+.ai-avatar img {
+  width: 24px;
+  height: 24px;
+  transition: all 0.3s ease;
+  padding: 8px;
+  border-radius: 50%;  /* 添加圆角 */
 }
 
 /* 气泡容器样式 */
@@ -151,4 +184,27 @@ const formatTime = () => {
     transform: translateY(0);
   }
 }
-</style> 
+
+.ai-avatar img {
+  width: 24px;
+  height: 24px;
+  transition: all 0.3s ease;
+}
+
+.ai-avatar img.rotate {
+  animation: rotating 2s linear infinite;
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ai-avatar-loading {
+  border: 2px solid rgba(77, 107, 254, 0.1);
+}
+</style>

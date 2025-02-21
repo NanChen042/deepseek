@@ -1,7 +1,7 @@
 <template>
   <div class="chat-view">
     <ChatContainer
-      title="Deepseek 助手"
+      title="Deepseek Chat"
       :messages="chatStore.messages"
       :loading="chatStore.loading"
       :prevent-enter-newline="true"

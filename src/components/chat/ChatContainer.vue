@@ -41,6 +41,9 @@
         :content="message.content"
         :is-user="message.role === 'user'"
         :use-typewriter="!initialLoad && !streamMode && message.role === 'assistant'"
+        :loading="loading"
+        :is-last-message="index === messages.length - 1"
+        :timestamp="Date.now()"
         @complete="handleMessageComplete(index)"
       />
       <!-- AI思考中状态显示 -->
@@ -48,12 +51,14 @@
            class="message message-ai thinking-message">
         <div class="message-content">
           <div class="avatar-wrapper">
-            <el-avatar :size="40" class="ai-avatar">
-              <el-icon><Service /></el-icon>
+            <el-avatar :size="40" class="ai-avatar thinking-avatar">
+              <img :src="deepseekLogo" class="rotate" alt="AI Avatar">
             </el-avatar>
           </div>
           <div class="bubble-wrapper">
+
             <div class="bubble thinking-bubble">
+              <span class="thinking-text">思考中</span>
               <div class="dots-container">
                 <span class="dot"></span>
                 <span class="dot"></span>
@@ -70,7 +75,6 @@
       :disabled="loading || isTyping"
       @send="$emit('send', $event)"
     />
-
     <!-- 确认弹窗 -->
     <el-dialog
       v-model="showConfirmDialog"
@@ -98,8 +102,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch } from 'vue'
-import { Service, Loading, Delete, Warning } from '@element-plus/icons-vue'
+import { Delete, Warning } from '@element-plus/icons-vue'
 import { ModelType } from '@/services/aiService'
+import deepseekLogo from '@/assets/deepseeklogo.svg'
 
 // 消息类型定义
 interface Message {
@@ -172,12 +177,25 @@ watch(currentModel, (newModel) => {
 const scrollToBottom = async () => {
   await nextTick()
   if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    const container = messagesContainer.value
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: initialLoad.value ? 'auto' : 'smooth'  // 首次加载时使用 auto
+    })
   }
 }
 
 // 监听消息变化，自动滚动
-watch(() => props.messages, scrollToBottom, { deep: true })
+watch(() => props.messages, () => {
+  scrollToBottom()
+}, { deep: true, immediate: true })
+
+// 监听加载状态变化，当开始加载时也滚动到底部
+watch(() => props.loading, (newVal) => {
+  if (newVal) {
+    scrollToBottom()
+  }
+}, { immediate: true })
 
 // 组件挂载时滚动到底部
 onMounted(() => {
@@ -255,7 +273,7 @@ const handleClear = () => {
     radial-gradient(circle at 25px 25px, rgba(0, 0, 0, 0.02) 2%, transparent 0%),
     radial-gradient(circle at 75px 75px, rgba(0, 0, 0, 0.02) 2%, transparent 0%);
   background-size: 100px 100px;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;  /* 移除默认的平滑滚动 */
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
 }
@@ -310,36 +328,69 @@ const handleClear = () => {
   }
 }
 
-/* 思考中状态样式 */
-.thinking-message {
-  opacity: 0.8;
-  animation: fadeInUp 0.3s ease-out;
+/* 基础消息内容布局 */
+.message-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 70%;
 }
 
-/* 思考中的气泡样式 */
+/* 头像容器样式 */
+.avatar-wrapper {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+/* 气泡容器样式 */
+.bubble-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 思考中状态样式优化 */
+.thinking-message {
+  opacity: 1;
+  animation: fadeInUp 0.3s ease-out;
+  margin-top: 12px;
+}
+
+/* 思考中的气泡样式优化 */
 .thinking-bubble {
   min-width: 60px;
-  padding: 12px 16px !important;
-  background: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(8px);
+  padding: 16px 20px !important;
+  border-radius: 12px;
+  background: #fff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;  /* 添加文字和点之间的间距 */
 }
 
-/* 跳动点动画 */
+.thinking-bubble:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 跳动点容器样式优化 */
 .dots-container {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 20px;
-  padding: 0 4px;
+  gap: 4px;
+  height: 16px;
 }
 
+/* 跳动点样式 */
 .dot {
-  width: 8px;
-  height: 8px;
-  background: #67c23a;
+  width: 6px;
+  height: 6px;
+  background: #4D6BFE;
   border-radius: 50%;
   display: inline-block;
-  opacity: 0.8;
+  opacity: 0.6;
   animation: bounce 1.4s infinite ease-in-out both;
 }
 
@@ -360,54 +411,46 @@ const handleClear = () => {
   }
 }
 
+/* 思考中头像样式 */
+.thinking-avatar {
+  background: white !important;
+  box-shadow: 0 2px 8px rgba(77, 107, 254, 0.15);
+  border: 1px solid rgba(77, 107, 254, 0.1);
+}
+
+.thinking-avatar img {
+  width: 24px;
+  height: 24px;
+  transition: all 0.3s ease;
+}
+
+.thinking-avatar img.rotate {
+  animation: rotating 2s linear infinite;
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(10px);
   }
   to {
-    opacity: 0.8;
+    opacity: 1;
     transform: translateY(0);
   }
 }
 
-/* 消息位置调整 */
-.message-ai.thinking-message {
-  margin: 0;
-  padding-top: 12px;
-}
-
+/* 思考中消息特殊样式 */
 .message-ai.thinking-message .message-content {
   align-items: center;
-  display: flex;
-}
-
-.ai-avatar {
-  background: #67c23a;
-  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
-}
-
-.avatar-wrapper {
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-}
-
-.bubble-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.message {
-  transition: transform 0.3s ease-out;
-}
-
-.thinking-message {
-  position: sticky;
-  bottom: 30px;
-  margin-top: 20px;
-  z-index: 1;
 }
 
 /* 清空按钮样式调整 */
@@ -534,5 +577,12 @@ const handleClear = () => {
 
 :deep(.el-select .el-input__inner) {
   font-size: 13px;  /* 减小字号 */
+}
+
+/* 思考中文字样式 */
+.thinking-text {
+  color: #4D6BFE;
+  opacity: 0.8;
+  font-size: 14px;
 }
 </style>

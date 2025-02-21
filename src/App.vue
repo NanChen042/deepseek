@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink, RouterView, useRoute } from "vue-router"
+import { RouterLink, RouterView, useRoute ,} from "vue-router"
 import { ref, watch } from 'vue'
 import { Menu, Close } from '@element-plus/icons-vue'  // 添加 Close 图标
 
@@ -16,9 +16,12 @@ watch(() => route.path, (newPath) => {
 const toggleMenu = () => {
   isCollapse.value = !isCollapse.value
 }
+
+
 </script>
 
 <template>
+
   <el-container class="app-container">
     <el-header class="app-header">
       <!-- 桌面端菜单 -->
@@ -29,6 +32,13 @@ const toggleMenu = () => {
         :ellipsis="false"
         :default-active="activeIndex"
       >
+      <el-menu-item >
+      <img
+        style="width: 100px"
+        src="./assets/deepseek.png"
+        alt="Element logo"
+      />
+    </el-menu-item>
         <el-menu-item index="/">首页</el-menu-item>
         <el-menu-item index="/chat">Deepseek打字机模式</el-menu-item>
         <el-menu-item index="/stream">Deepseek流式输出模式</el-menu-item>
@@ -36,6 +46,14 @@ const toggleMenu = () => {
 
       <!-- 移动端菜单 -->
       <div class="mobile-menu">
+        <!-- 添加logo容器 -->
+        <div class="mobile-logo">
+          <img
+            style="width: 100px"
+            src="./assets/deepseek.png"
+            alt="Element logo"
+          />
+        </div>
         <el-button class="hamburger-btn" @click="toggleMenu">
           <el-icon>
             <component :is="isCollapse ? Close : Menu" />
@@ -58,7 +76,12 @@ const toggleMenu = () => {
     </el-header>
 
     <el-main class="app-main">
-      <router-view></router-view>
+
+      <router-view v-slot="{ Component }">
+        <keep-alive>
+        <component :is="Component" v-if="route.meta.keepAlive" :key="route.path" />
+      </keep-alive>
+      </router-view>
     </el-main>
   </el-container>
 </template>
@@ -98,7 +121,9 @@ const toggleMenu = () => {
   border-bottom: none;
   width: 100%; /* 添加宽度 100% */
 }
-
+.el-menu--horizontal > .el-menu-item:nth-child(1) {
+  margin-right: auto;
+}
 :deep(.el-menu--horizontal > .el-menu-item) {
   height: 60px;
   line-height: 60px;
@@ -110,16 +135,17 @@ const toggleMenu = () => {
 }
 
 /* 修改移动端菜单样式 */
-.mobile-menu-items :deep(.el-menu) {
+.mobile-menu {
+  display: none;  /* 默认隐藏移动端菜单 */
   width: 100%;
-  border: none;
-  background: transparent;
+  position: relative;
+  justify-content: space-between;
+  align-items: center;
 }
 
-/* 修改响应式菜单样式 */
-.mobile-menu {
-  display: none;
-  width: 100%;
+.mobile-logo {
+  padding-left: 16px;
+  display: none;  /* 默认隐藏移动端logo */
 }
 
 .hamburger-btn {
@@ -158,15 +184,18 @@ const toggleMenu = () => {
   }
 
   .mobile-menu {
-    display: block;
+    display: flex;
     height: 100%;
+  }
+
+  .mobile-logo {
+    display: block;  /* 在移动端显示logo */
   }
 
   .app-header {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    padding: 0 16px;
+    padding: 0;  /* 修改padding */
   }
 
   /* 移动端菜单项样式优化 */
