@@ -10,7 +10,7 @@ interface ChatCompletionRequestMessage {
 
 // API 配置
 const API_CONFIG = {
-  baseURL: 'https://api.deepseek.com/v1',  // 修改为完整的v1路径
+  baseURL: 'https://api.siliconflow.cn/v1',  // 修改为完整的v1路径
   apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY
 }
 
@@ -25,8 +25,8 @@ if (!API_CONFIG.apiKey) {
 
 // 模型类型
 export enum ModelType {
-  Chat = 'deepseek-chat',      // DeepSeek-V3
-  Reasoner = 'deepseek-reasoner' // DeepSeek-R1
+  Chat = 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B',      // DeepSeek-V3
+  Reasoner = 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B' // DeepSeek-R1
 }
 
 // 请求配置接口
@@ -160,7 +160,7 @@ class AIChatService {
   }
 
   // 流式聊天
-  async streamChat(messages: ChatCompletionRequestMessage[], onChunk: (chunk: string) => void) {
+  async streamChat(messages: ChatCompletionRequestMessage[], onChunk: (chunk: StreamChunk) => void) {
     try {
       const response = await fetch(`${API_CONFIG.baseURL}/chat/completions`, {
         method: 'POST',
@@ -204,8 +204,22 @@ class AIChatService {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6))
-              const content = data.choices[0].delta.content
-              if (content) onChunk(content)
+              const streamChunk: StreamChunk = {}
+
+              // 处理普通内容
+              if (data.choices?.[0]?.delta?.content) {
+                streamChunk.content = data.choices[0].delta.content
+              }
+
+              // 处理思维链内容
+              if (data.choices?.[0]?.delta?.reasoning_content) {
+                streamChunk.reasoning_content = data.choices[0].delta.reasoning_content
+              }
+
+              // 只有当有内容才回调
+              if (streamChunk.content || streamChunk.reasoning_content) {
+                onChunk(streamChunk)
+              }
             } catch (e) {
               console.error('Parse chunk error:', e)
             }
@@ -219,7 +233,7 @@ class AIChatService {
   }
 
   // 流式推理
-  async streamReason(prompt: string, onChunk: (chunk: string) => void) {
+  async streamReason(prompt: string, onChunk: (chunk: StreamChunk) => void) {
     const previousConfig = this.config.model
     try {
       this.config.model = ModelType.Reasoner

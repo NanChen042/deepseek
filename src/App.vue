@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRoute ,} from "vue-router"
-import { ref, watch } from 'vue'
-import { Menu, Close } from '@element-plus/icons-vue'  // 添加 Close 图标
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { Menu, Close } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const activeIndex = ref(route.path)
 const isCollapse = ref(false)
+const isScrolled = ref(false)
 
 // 监听路由变化，更新激活的菜单项
 watch(() => route.path, (newPath) => {
   activeIndex.value = newPath
+  // 路由变化时收起移动端菜单
+  isCollapse.value = false
 })
 
 // 切换菜单展开/收起状态
@@ -17,240 +20,321 @@ const toggleMenu = () => {
   isCollapse.value = !isCollapse.value
 }
 
+// 处理滚动效果
+const handleScroll = () => {
+  isScrolled.value = window.scrollY > 20
+}
 
+// 监听滚动事件
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+
+// 关闭菜单
+const closeMenu = () => {
+  if (isCollapse.value) {
+    isCollapse.value = false
+  }
+}
 </script>
 
 <template>
-
-  <el-container class="app-container">
-    <el-header class="app-header">
-      <!-- 桌面端菜单 -->
-      <el-menu
-        class="desktop-menu"
-        mode="horizontal"
-        router
-        :ellipsis="false"
-        :default-active="activeIndex"
-      >
-      <el-menu-item >
-      <img
-        style="width: 100px"
-        src="./assets/deepseek.png"
-        alt="Element logo"
-      />
-    </el-menu-item>
-        <el-menu-item index="/">首页</el-menu-item>
-        <el-menu-item index="/chat">Deepseek打字机模式</el-menu-item>
-        <el-menu-item index="/stream">Deepseek流式输出模式</el-menu-item>
-      </el-menu>
-
-      <!-- 移动端菜单 -->
-      <div class="mobile-menu">
-        <!-- 添加logo容器 -->
-        <div class="mobile-logo">
-          <img
-            style="width: 100px"
-            src="./assets/deepseek.png"
-            alt="Element logo"
-          />
+  <div :class="['app-wrapper', { 'menu-open': isCollapse }]">
+    <header :class="['app-header', { 'scrolled': isScrolled }]">
+      <div class="header-container">
+        <!-- Logo -->
+        <div class="brand-logo">
+          <img src="./assets/deepseek.png" alt="Deepseek logo" />
         </div>
-        <el-button class="hamburger-btn" @click="toggleMenu">
-          <el-icon>
-            <component :is="isCollapse ? Close : Menu" />
-          </el-icon>
-        </el-button>
-        <Transition name="slide-fade">
-          <el-menu
-            v-show="isCollapse"
-            class="mobile-menu-items"
-            mode="vertical"
-            router
-            :default-active="activeIndex"
-          >
-            <el-menu-item index="/">首页</el-menu-item>
-            <el-menu-item index="/chat">Deepseek打字机模式</el-menu-item>
-            <el-menu-item index="/stream">Deepseek流式输出模式</el-menu-item>
-          </el-menu>
-        </Transition>
+
+        <!-- 桌面端菜单 -->
+        <el-menu
+          class="desktop-menu"
+          mode="horizontal"
+          router
+          :ellipsis="false"
+          :default-active="activeIndex"
+        >
+          <el-menu-item index="/">首页</el-menu-item>
+          <el-menu-item index="/chat">Deepseek打字机模式</el-menu-item>
+          <el-menu-item index="/stream">Deepseek流式输出模式</el-menu-item>
+          <el-menu-item index="/image">AI图像生成</el-menu-item>
+        </el-menu>
+
+        <!-- 移动端菜单按钮 -->
+        <div class="mobile-controls">
+          <button class="menu-toggle" @click="toggleMenu" aria-label="Toggle menu">
+            <el-icon>
+              <component :is="isCollapse ? Close : Menu" />
+            </el-icon>
+          </button>
+        </div>
       </div>
-    </el-header>
+    </header>
+
+    <!-- 移动端菜单 -->
+    <Transition name="slide-fade">
+      <div v-show="isCollapse" class="mobile-menu">
+        <el-menu
+          class="mobile-menu-items"
+          mode="vertical"
+          router
+          :default-active="activeIndex"
+          @select="closeMenu"
+        >
+          <el-menu-item index="/">首页</el-menu-item>
+          <el-menu-item index="/chat">Deepseek打字机模式</el-menu-item>
+          <el-menu-item index="/stream">Deepseek流式输出模式</el-menu-item>
+          <el-menu-item index="/image">AI图像生成</el-menu-item>
+        </el-menu>
+      </div>
+    </Transition>
+
+    <!-- 背景遮罩 -->
+    <Transition name="fade">
+      <div v-if="isCollapse" class="menu-backdrop" @click="closeMenu"></div>
+    </Transition>
 
     <el-main class="app-main">
-
       <router-view v-slot="{ Component }">
         <keep-alive>
-        <component :is="Component" v-if="route.meta.keepAlive" :key="route.path" />
-      </keep-alive>
+          <component :is="Component" v-if="route.meta.keepAlive" :key="route.path" />
+        </keep-alive>
       </router-view>
     </el-main>
-  </el-container>
+  </div>
 </template>
 
 <style scoped>
-.app-container {
+/* 全局容器 */
+.app-wrapper {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
+/* 背景遮罩 */
+.menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 90;
+  backdrop-filter: blur(2px);
+}
+
+/* 头部样式 */
 .app-header {
-  padding: 0;
-  height: 60px !important;
-  flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  background: #fff;
-  position: relative;
-  z-index: 2;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  z-index: 100;
+  transition: all 0.3s ease;
+  background-color: #ffffff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
 }
 
-.app-main {
-  flex: 1;
-  padding: 0;
-  height: calc(100vh - 60px);
-  position: relative;
-  overflow-x: hidden;
+/* 滚动后的头部样式 */
+.app-header.scrolled {
+  height: 56px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
 }
 
-/* 修改桌面端菜单样式 */
-.desktop-menu {
+/* 头部容器 */
+.header-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
   height: 100%;
-  width: 100%; /* 添加宽度 100% */
-}
-
-:deep(.el-menu--horizontal) {
-  border-bottom: none;
-  width: 100%; /* 添加宽度 100% */
-}
-.el-menu--horizontal > .el-menu-item:nth-child(1) {
-  margin-right: auto;
-}
-:deep(.el-menu--horizontal > .el-menu-item) {
-  height: 60px;
-  line-height: 60px;
-}
-
-/* 移除之前重复的样式 */
-:deep(.el-menu) {
-  border-bottom: none;
-}
-
-/* 修改移动端菜单样式 */
-.mobile-menu {
-  display: none;  /* 默认隐藏移动端菜单 */
-  width: 100%;
-  position: relative;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
+}
+
+/* Logo样式 */
+.brand-logo {
+  height: 100%;
+  display: flex;
   align-items: center;
 }
 
-.mobile-logo {
-  padding-left: 16px;
-  display: none;  /* 默认隐藏移动端logo */
-}
-
-.hamburger-btn {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 8px;
-  height: 40px;
-  border: none;
-  background: transparent;
-  transition: transform 0.3s ease;  /* 添加过渡效果 */
-}
-
-.hamburger-btn :deep(.el-icon) {
-  font-size: 24px;
+.brand-logo img {
+  height: 36px;
+  object-fit: contain;
   transition: all 0.3s ease;
 }
 
-.mobile-menu-items {
-  position: fixed;
-  top: 60px;
-  left: 0;
-  right: 0;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-  border-top: 1px solid #eee;
-  transform-origin: top;
+.scrolled .brand-logo img {
+  height: 32px;
 }
 
-/* 修改媒体查询样式 */
+/* 桌面菜单样式 */
+.desktop-menu {
+  background: transparent;
+  border: none;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.desktop-menu :deep(.el-menu--horizontal) {
+  border-bottom: none;
+}
+
+.desktop-menu :deep(.el-menu-item) {
+  height: 64px;
+  line-height: 64px;
+  font-size: 15px;
+  color: #333;
+  font-weight: 400;
+  transition: all 0.3s ease;
+  margin: 0 4px;
+}
+
+.desktop-menu :deep(.el-menu-item:hover) {
+  color: #1890ff;
+  background-color: rgba(24, 144, 255, 0.05);
+}
+
+.desktop-menu :deep(.el-menu-item.is-active) {
+  color: #1890ff;
+  font-weight: 500;
+  border-bottom: 2px solid #1890ff;
+}
+
+.scrolled .desktop-menu :deep(.el-menu-item) {
+  height: 56px;
+  line-height: 56px;
+}
+
+/* 移动端控制按钮 */
+.mobile-controls {
+  display: none;
+}
+
+.menu-toggle {
+  background: transparent;
+  border: none;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #333;
+  font-size: 22px;
+  transition: all 0.2s ease;
+}
+
+.menu-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #1890ff;
+}
+
+/* 移动端菜单 */
+.mobile-menu {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 95;
+  background-color: #fff;
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.mobile-menu .mobile-menu-items {
+  padding: 16px 0;
+  border: none;
+}
+
+.mobile-menu .mobile-menu-items :deep(.el-menu-item) {
+  height: 52px;
+  line-height: 52px;
+  padding: 0 32px;
+  margin: 4px 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #333;
+}
+
+.mobile-menu .mobile-menu-items :deep(.el-menu-item:hover) {
+  background-color: rgba(24, 144, 255, 0.05);
+  color: #1890ff;
+}
+
+.mobile-menu .mobile-menu-items :deep(.el-menu-item.is-active) {
+  background-color: rgba(24, 144, 255, 0.1);
+  color: #1890ff;
+  font-weight: 500;
+}
+
+/* 主内容区域 */
+.app-main {
+  flex: 1;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* 过渡动画 */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.25s ease-out;
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateY(-8px);
+  opacity: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 响应式适配 */
 @media screen and (max-width: 768px) {
   .desktop-menu {
     display: none;
   }
 
+  .mobile-controls {
+    display: flex;
+  }
+
+  .app-header, .app-header.scrolled {
+    height: 56px;
+  }
+
+  .header-container {
+    padding: 0 16px;
+  }
+
   .mobile-menu {
-    display: flex;
-    height: 100%;
+    top: 56px;
+    max-height: calc(100vh - 56px);
   }
 
-  .mobile-logo {
-    display: block;  /* 在移动端显示logo */
+  .app-wrapper.menu-open {
+    overflow: hidden;
+    height: 100vh;
   }
-
-  .app-header {
-    display: flex;
-    align-items: center;
-    padding: 0;  /* 修改padding */
-  }
-
-  /* 移动端菜单项样式优化 */
-  .mobile-menu-items {
-    padding: 8px 0;
-  }
-
-  .mobile-menu-items :deep(.el-menu) {
-    border: none;
-    background: transparent;
-  }
-
-  .mobile-menu-items :deep(.el-menu-item) {
-    height: 48px;
-    line-height: 48px;
-    margin: 4px 0;
-    padding: 0 24px;
-  }
-
-  .mobile-menu-items :deep(.el-menu-item:hover) {
-    background-color: #f5f7fa;
-  }
-
-  .mobile-menu-items :deep(.el-menu-item.is-active) {
-    background-color: #ecf5ff;
-  }
-}
-
-/* 修改移动端菜单动画样式 */
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-fade-enter-from {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-
-.slide-fade-leave-to {
-  transform: translateY(-100%);
-  opacity: 0;
-}
-
-/* 优化桌面端菜单样式 */
-.desktop-menu {
-  height: 100%;
-}
-
-:deep(.el-menu--horizontal) {
-  border-bottom: none;
-}
-
-:deep(.el-menu-item) {
-  font-size: 15px;
-  transition: all 0.3s ease;
 }
 </style>

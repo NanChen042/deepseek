@@ -64,8 +64,7 @@ const handleSend = async (message: string) => {
 }
 
 :deep(.message-content) {
-  white-space: pre-wrap;  /* 保留换行符和空格 */
-  word-break: break-word; /* 允许单词内换行 */
+
   line-height: 1.6;      /* 设置合适的行高 */
 }
 </style>

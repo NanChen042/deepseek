@@ -5,28 +5,15 @@
     <div class="chat-header">
       <div class="header-left">
         <h3>{{ title }}</h3>
-        <el-select
-          v-model="currentModel"
-          size="small"
-          class="model-select"
-          :disabled="loading"
-        >
-          <el-option
-            v-for="(label, model) in modelOptions"
-            :key="model"
-            :label="label"
-            :value="model"
-          />
+        <el-select v-model="currentModel" size="small" class="model-select" :disabled="loading">
+          <el-option v-for="(label, model) in modelOptions" :key="model" :label="label" :value="model" />
         </el-select>
       </div>
-      <el-button
-        type="danger"
-        plain
-        class="clear-button"
-        @click="showClearConfirm"
-      >
+      <el-button type="danger" plain class="clear-button" @click="showClearConfirm">
         <template #icon>
-          <el-icon><Delete /></el-icon>
+          <el-icon>
+            <Delete />
+          </el-icon>
         </template>
         清空全部对话
       </el-button>
@@ -35,28 +22,21 @@
     <!-- 消息列表区域：包含所有对话内容 -->
     <div class="chat-messages" ref="messagesContainer">
       <!-- 循环渲染消息气泡 -->
-      <MessageBubble
-        v-for="(message, index) in messages"
-        :key="index"
-        :content="message.content"
-        :is-user="message.role === 'user'"
-        :use-typewriter="!initialLoad && !streamMode && message.role === 'assistant'"
-        :loading="loading"
-        :is-last-message="index === messages.length - 1"
-        :timestamp="Date.now()"
-        @complete="handleMessageComplete(index)"
-      />
+      <MessageBubble v-for="(message, index) in messages" :key="index" :content="message.content" :is-user="message.role === 'user'" :use-typewriter="
+          !initialLoad && !streamMode && message.role === 'assistant'
+        " :loading="loading" :is-last-message="index === messages.length - 1" :timestamp="Date.now()" @complete="handleMessageComplete(index)" />
       <!-- AI思考中状态显示 -->
-      <div v-if="loading && (!messages.length || messages[messages.length - 1].role === 'user')"
-           class="message message-ai thinking-message">
+      <div v-if="
+          loading &&
+          (!messages.length || messages[messages.length - 1].role === 'user')
+        " class="message message-ai thinking-message">
         <div class="message-content">
           <div class="avatar-wrapper">
             <el-avatar :size="40" class="ai-avatar thinking-avatar">
-              <img :src="deepseekLogo" class="rotate" alt="AI Avatar">
+              <img :src="deepseekLogo" class="rotate" alt="AI Avatar" />
             </el-avatar>
           </div>
           <div class="bubble-wrapper">
-
             <div class="bubble thinking-bubble">
               <span class="thinking-text">思考中</span>
               <div class="dots-container">
@@ -71,29 +51,20 @@
     </div>
 
     <!-- 输入区域组件 -->
-    <ChatInput
-      :disabled="loading || isTyping"
-      @send="$emit('send', $event)"
-    />
+    <ChatInput :disabled="loading || isTyping" @send="$emit('send', $event)" />
     <!-- 确认弹窗 -->
-    <el-dialog
-      v-model="showConfirmDialog"
-      title="确认清空"
-      width="400px"
-      :show-close="false"
-      class="clear-dialog"
-    >
+    <el-dialog v-model="showConfirmDialog" title="确认清空" width="400px" :show-close="false" class="clear-dialog">
       <div class="dialog-content">
-        <el-icon class="warning-icon" color="#E6A23C"><Warning /></el-icon>
+        <el-icon class="warning-icon" color="#E6A23C">
+          <Warning />
+        </el-icon>
         <p>确定要清空所有对话记录吗？</p>
         <p class="warning-text">此操作不可恢复</p>
       </div>
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="showConfirmDialog = false">取消</el-button>
-          <el-button type="danger" @click="handleClear">
-            确认清空
-          </el-button>
+          <el-button type="danger" @click="handleClear"> 确认清空 </el-button>
         </div>
       </template>
     </el-dialog>
@@ -101,121 +72,132 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
-import { Delete, Warning } from '@element-plus/icons-vue'
-import { ModelType } from '@/services/aiService'
-import deepseekLogo from '@/assets/deepseeklogo.svg'
+import { ref, onMounted, nextTick, watch } from "vue";
+import { Delete, Warning } from "@element-plus/icons-vue";
+import { ModelType } from "@/services/aiService";
+import deepseekLogo from "@/assets/deepseeklogo.svg";
 
 // 消息类型定义
 interface Message {
-  role: 'user' | 'assistant' | 'system'
-  content: string
+  role: "user" | "assistant" | "system";
+  content: string;
 }
 
 // 组件属性定义
 const props = defineProps<{
-  title?: string          // 聊天标题
-  messages: Message[]     // 消息列表
-  loading?: boolean       // 加载状态
-  streamMode?: boolean     // 新增流式模式属性
-}>()
+  title?: string; // 聊天标题
+  messages: Message[]; // 消息列表
+  loading?: boolean; // 加载状态
+  streamMode?: boolean; // 新增流式模式属性
+}>();
 
 // 定义组件事件
 const emit = defineEmits<{
-  send: [message: string]
-  clear: []
-  modelChange: [model: ModelType]
-}>()
+  send: [message: string];
+  clear: [];
+  modelChange: [model: ModelType];
+}>();
 
 // 组件状态
-const messagesContainer = ref<HTMLElement | null>(null)
-const isTyping = ref(false)
-const initialLoad = ref(true) // 添加初始加载标记
+const messagesContainer = ref<HTMLElement | null>(null);
+const isTyping = ref(false);
+const initialLoad = ref(true); // 添加初始加载标记
 
 // 确认弹窗状态
-const showConfirmDialog = ref(false)
+const showConfirmDialog = ref(false);
 
 // 模型选项
 const modelOptions = {
-  [ModelType.Chat]: 'DeepSeek-V3 (通用对话)',
-  [ModelType.Reasoner]: 'DeepSeek-R1 (推理增强)'
-}
+  [ModelType.Reasoner]: "DeepSeek-R1 (推理增强)",
+};
 
 // 当前选择的模型
-const currentModel = ref<ModelType>(ModelType.Chat)
+const currentModel = ref<ModelType>(ModelType.Chat);
 
 // 处理消息打字完成事件
 const handleMessageComplete = (index: number) => {
   if (index === props.messages.length - 1) {
-    isTyping.value = false
+    isTyping.value = false;
   }
-}
+};
 
 // 监听新消息，控制打字机效果
-watch(() => props.messages, (newMessages, oldMessages) => {
-  // 跳过初始加载的消息
-  if (initialLoad.value) {
-    initialLoad.value = false
-    return
-  }
-
-  if (newMessages.length > oldMessages?.length) {
-    const lastMessage = newMessages[newMessages.length - 1]
-    // 只在非流式模式下启用打字机效果
-    if (lastMessage.role === 'assistant' && !props.streamMode) {
-      isTyping.value = true
+watch(
+  () => props.messages,
+  (newMessages, oldMessages) => {
+    // 跳过初始加载的消息
+    if (initialLoad.value) {
+      initialLoad.value = false;
+      return;
     }
-  }
-}, { deep: true })
+
+    if (newMessages.length > oldMessages?.length) {
+      const lastMessage = newMessages[newMessages.length - 1];
+      // 只在非流式模式下启用打字机效果
+      if (lastMessage.role === "assistant" && !props.streamMode) {
+        isTyping.value = true;
+      }
+    }
+  },
+  { deep: true }
+);
 
 // 监听模型变化
 watch(currentModel, (newModel) => {
-  emit('modelChange', newModel)
-})
+  emit("modelChange", newModel);
+});
 
 // 滚动到底部方法
 const scrollToBottom = async () => {
-  await nextTick()
+  await nextTick();
   if (messagesContainer.value) {
-    const container = messagesContainer.value
+    const container = messagesContainer.value;
     container.scrollTo({
       top: container.scrollHeight,
-      behavior: initialLoad.value ? 'auto' : 'smooth'  // 首次加载时使用 auto
-    })
+      behavior: initialLoad.value ? "auto" : "smooth", // 首次加载时使用 auto
+    });
   }
-}
+};
 
 // 监听消息变化，自动滚动
-watch(() => props.messages, () => {
-  scrollToBottom()
-}, { deep: true, immediate: true })
+watch(
+  () => props.messages,
+  () => {
+    scrollToBottom();
+  },
+  { deep: true, immediate: true }
+);
 
 // 监听加载状态变化，当开始加载时也滚动到底部
-watch(() => props.loading, (newVal) => {
-  if (newVal) {
-    scrollToBottom()
-  }
-}, { immediate: true })
+watch(
+  () => props.loading,
+  (newVal) => {
+    if (newVal) {
+      scrollToBottom();
+    }
+  },
+  { immediate: true }
+);
 
 // 组件挂载时滚动到底部
 onMounted(() => {
-  scrollToBottom()
+  scrollToBottom();
   // 初始加载完成后重置标记
   nextTick(() => {
-    initialLoad.value = false
-  })
-})
+    initialLoad.value = false;
+  });
+});
 
 // 显示确认弹窗
 const showClearConfirm = () => {
-  showConfirmDialog.value = true
-}
+  showConfirmDialog.value = true;
+};
 
 // 处理清空操作
 const handleClear = () => {
-  showConfirmDialog.value = false
-  emit('clear')
-}
+  showConfirmDialog.value = false;
+  emit("clear");
+};
 </script>
 
 <style scoped>
@@ -239,15 +221,15 @@ const handleClear = () => {
   justify-content: space-between;
   align-items: center;
   box-sizing: border-box;
-  padding: 16px 24px;  /* 减小内边距 */
+  padding: 16px 24px; /* 减小内边距 */
   background: #fff;
   border-bottom: 1px solid #eee;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.02);  /* 减小阴影 */
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.02); /* 减小阴影 */
   z-index: 1;
 }
 
 .chat-header h3 {
-  font-size: 18px;  /* 减小标题字号 */
+  font-size: 18px; /* 减小标题字号 */
   font-weight: 600;
   color: #303133;
   margin: 0;
@@ -255,7 +237,7 @@ const handleClear = () => {
 
 /* 在线状态指示器调整 */
 .chat-header h3::before {
-  width: 6px;  /* 减小指示点大小 */
+  width: 6px; /* 减小指示点大小 */
   height: 6px;
   margin-right: 8px;
 }
@@ -269,11 +251,14 @@ const handleClear = () => {
   flex-direction: column;
   gap: 24px;
   background: #f9fafb;
-  background-image:
-    radial-gradient(circle at 25px 25px, rgba(0, 0, 0, 0.02) 2%, transparent 0%),
+  background-image: radial-gradient(
+      circle at 25px 25px,
+      rgba(0, 0, 0, 0.02) 2%,
+      transparent 0%
+    ),
     radial-gradient(circle at 75px 75px, rgba(0, 0, 0, 0.02) 2%, transparent 0%);
   background-size: 100px 100px;
-  scroll-behavior: auto;  /* 移除默认的平滑滚动 */
+  scroll-behavior: auto; /* 移除默认的平滑滚动 */
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
 }
@@ -285,8 +270,12 @@ const handleClear = () => {
 }
 
 @keyframes rotating {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 自定义滚动条样式 */
@@ -368,7 +357,7 @@ const handleClear = () => {
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 8px;  /* 添加文字和点之间的间距 */
+  gap: 8px; /* 添加文字和点之间的间距 */
 }
 
 .thinking-bubble:hover {
@@ -387,7 +376,7 @@ const handleClear = () => {
 .dot {
   width: 6px;
   height: 6px;
-  background: #4D6BFE;
+  background: #4d6bfe;
   border-radius: 50%;
   display: inline-block;
   opacity: 0.6;
@@ -403,7 +392,9 @@ const handleClear = () => {
 }
 
 @keyframes bounce {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: scale(0);
   }
   40% {
@@ -455,20 +446,20 @@ const handleClear = () => {
 
 /* 清空按钮样式调整 */
 .clear-button {
-  padding: 8px 16px;  /* 减小按钮内边距 */
-  font-size: 13px;    /* 减小字号 */
-  height: 32px;       /* 固定高度 */
+  padding: 8px 16px; /* 减小按钮内边距 */
+  font-size: 13px; /* 减小字号 */
+  height: 32px; /* 固定高度 */
 }
 
 .clear-button :deep(.el-icon) {
-  font-size: 14px;    /* 减小图标大小 */
+  font-size: 14px; /* 减小图标大小 */
   margin-right: 4px;
   vertical-align: -1px;
 }
 
 /* 头部布局间距调整 */
 .header-left {
-  gap: 12px;  /* 减小间距 */
+  gap: 12px; /* 减小间距 */
 }
 
 /* 优化动画效果 */
@@ -571,17 +562,17 @@ const handleClear = () => {
 }
 
 :deep(.el-select .el-input__wrapper) {
-  padding: 0 12px;  /* 减小内边距 */
-  height: 32px;     /* 减小高度 */
+  padding: 0 12px; /* 减小内边距 */
+  height: 32px; /* 减小高度 */
 }
 
 :deep(.el-select .el-input__inner) {
-  font-size: 13px;  /* 减小字号 */
+  font-size: 13px; /* 减小字号 */
 }
 
 /* 思考中文字样式 */
 .thinking-text {
-  color: #4D6BFE;
+  color: #4d6bfe;
   opacity: 0.8;
   font-size: 14px;
 }
