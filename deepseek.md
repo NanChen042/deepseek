@@ -2,42 +2,58 @@
 
 先看完整效果：
 <video controls style="width: 100%;">
-  <source src="./assets/deepseek/Deepseek.mp4" type="video/mp4">
+  <source src="./assets/deepseek/deepseekvideo.mp4" type="video/mp4">
   您的浏览器不支持 HTML5 视频标签。
 </video>
 
 
 效果图：
-![alt text](assets/deepseek/image-1.png)
-效果图：
-![alt text](assets/deepseek/image.png)
-![alt text](assets/deepseek/image-2.png)
+![20250410135913.png](assets/deepseek.md/20250410135913.png)
+![20250410135930.png](assets/deepseek.md/20250410135930.png)
+
+<!-- 新增功能效果图占位符 -->
+![20250410140247.png](assets/deepseek.md/20250410140247.png)
+![20250410135953.png](assets/deepseek.md/20250410135953.png)
+
 ## 目录
 
-1. [项目概述](#项目概述)
-2. [功能特点](#功能特点)
-3. [环境准备](#环境准备)
-4. [项目结构](#项目结构)
-5. [组件详解](#组件详解)
-   - [ChatContainer](#1-chatcontainervue)
-   - [ChatInput](#2-chatinputvue)
-   - [MessageBubble](#3-messagebbubblevue)
-   - [TypeWriter](#4-typewritervue)
-6. [核心代码示例](#核心代码示例)
-7. [使用指南](#使用指南)
-8. [常见问题](#常见问题)
+- [DeepSeek AI 聊天助手集成指南](#deepseek-ai-聊天助手集成指南)
+  - [目录](#目录)
+  - [项目概述](#项目概述)
+  - [功能特点](#功能特点)
+  - [环境准备](#环境准备)
+    - [1. 安装依赖](#1-安装依赖)
+    - [2. 环境配置](#2-环境配置)
+  - [项目结构](#项目结构)
+  - [组件与视图详解](#组件与视图详解)
+    - [1. ChatContainer.vue](#1-chatcontainervue)
+      - [功能特性](#功能特性)
+      - [组件 API](#组件-api)
+    - [6. ImageGenerationView.vue](#6-imagegenerationviewvue)
+      - [功能特性](#功能特性-1)
+      - [关键实现](#关键实现)
+      - [关键参数说明](#关键参数说明)
+      - [示例代码片段 (简化版调用逻辑)](#示例代码片段-简化版调用逻辑)
+    - [图像生成](#图像生成)
+  - [常见问题](#常见问题)
+    - [API 相关](#api-相关)
+    - [界面显示](#界面显示)
+    - [性能优化](#性能优化)
+    - [图像生成相关](#图像生成相关)
+    - [流式输出相关](#流式输出相关)
 
 ## 项目概述
 
-基于 Vue 3 + TypeScript + Element Plus 开发的 AI 聊天助手，集成了 DeepSeek 的 API 服务。提供打字机模式和流式输出两种对话模式，支持多种 AI 模型切换。
+基于 Vue 3 + TypeScript + Element Plus 开发的 AI 聊天助手，集成了 DeepSeek 的 API 服务。提供打字机模式、流式输出两种对话模式，以及 AI 图像生成功能，支持多种 AI 模型切换。
 
 ## 功能特点
 
 | 基础功能 | 交互体验 | UI/UX | 其他特性 |
 |---------|---------|-------|----------|
 | 🚀 Vue 3 Composition API | ✨ 打字机效果 | 🎨 Element Plus UI | 📱 响应式设计 |
-| 💪 TypeScript 支持 | 🌊 流式实时输出 | 🖼️ 自定义用户头像 | 🔄 模型切换 |
-| 🔌 DeepSeek API 集成 | ⌚ 消息时间显示 | 🎭 思考状态动画 | 🗑️ 对话清空 |
+| 💪 TypeScript 支持 | 🌊 流式实时输出 (优化版) | ��️ 自定义用户头像 | 🔄 模型切换 |
+| 🔌 DeepSeek API 集成 | ⌚ 消息时间显示 | 🎭 思考状态动画 (常规) | 🗑️ 对话清空 |
+| 🎨 AI 图像生成 | 🤔 深度思考面板 (流式, 可交互) | ✨ 图片展示与下载 | ⚙️ 自定义图像参数 |
 
 ## 环境准备
 
@@ -53,27 +69,42 @@ npm install element-plus @element-plus/icons-vue axios
 ### 2. 环境配置
 创建 `.env.local` 文件：
 ```env
-VITE_DEEPSEEK_API_KEY=your_api_key_here
+# 用于聊天功能的 API Key
+VITE_DEEPSEEK_CHAT_API_KEY=your_chat_api_key_here 
+# 用于图像生成功能的 API Key
+VITE_DEEPSEEK_IMAGE_API_KEY=your_image_api_key_here
 ```
+**注意**: 请确保使用对应的 API Key，聊天和图像生成通常使用不同的 Key。
 
 ## 项目结构
 
 ```
 src/
-├── components/chat/          # 聊天相关组件
-│   ├── ChatContainer.vue    # 聊天容器组件
-│   ├── ChatInput.vue        # 输入组件
-│   ├── MessageBubble.vue    # 消息气泡组件
-│   └── TypeWriter.vue       # 打字机效果组件
-├── services/
-│   └── aiService.ts         # API 服务封装
-├── views/
-│   ├── ChatView.vue        # 打字机模式页面
-│   └── StreamView.vue      # 流式输出页面
+├── assets/                 # 静态资源
+├── components/             # 公共组件
+│   └── chat/               # 聊天相关组件
+│       ├── ChatContainer.vue    # 聊天容器组件
+│       ├── ChatInput.vue        # 输入组件
+│       ├── MessageBubble.vue    # 消息气泡组件
+│       └── TypeWriter.vue       # 打字机效果组件
+├── config/                 # 配置文件
+├── router/                 # 路由配置
+│   └── index.ts
+├── services/               # API 服务封装
+│   ├── aiService.ts         # 聊天 API 服务
+│   └── imageService.ts      # 图像生成 API 服务
+├── stores/                 # Pinia 状态管理
+│   └── chat.ts
+├── types/                  # TypeScript 类型定义
+├── views/                  # 页面视图
+│   ├── ChatView.vue        # 打字机模式聊天页面
+│   ├── StreamView.vue      # 流式输出聊天页面
+│   └── ImageGenerationView.vue # AI 图像生成页面
 └── App.vue                 # 根组件
+└── main.ts                 # 应用入口
 ```
 
-## 组件详解
+## 组件与视图详解
 
 ### 1. ChatContainer.vue
 
@@ -85,7 +116,7 @@ src/
 - ⌨️ 打字机效果管理
 - 🔀 模型切换
 - 🗑️ 清空对话
-- 💫 思考状态动画
+- 💫 思考状态动画 (适用于非流式模式，显示为三个点的简单加载动画)
 - 📱 响应式适配
 
 #### 组件 API
@@ -645,9 +676,7 @@ const handleClear = () => {
 :deep(.el-select .el-input__inner) {
   font-size: 13px;  /* 减小字号 */
 }
-</style> 
-```
-
+</style>
 
 ### 2. ChatInput.vue
 
@@ -888,8 +917,8 @@ const handleSend = () => {
     display: none;
   }
 }
-</style> 
-```
+</style>
+
 ### 3. MessageBubble.vue
 
 消息气泡组件特点：
@@ -1094,8 +1123,7 @@ const formatTime = () => {
     transform: translateY(0);
   }
 }
-</style> 
-```
+</style>
 
 ### 4. TypeWriter.vue
 #### 组件描述
@@ -1221,117 +1249,89 @@ onUnmounted(() => {
 .typewriter {
   display: inline-block;
 }
-</style> 
-```
-## API 集成
+</style>
 
-### aiService.ts
+### 5. StreamView.vue
 
-封装 DeepSeek API 的 AI 聊天服务，支持普通聊天、推理模式、流式响应等功能。提供灵活的模型切换和参数配置：
+流式输出聊天页面的主视图组件。
+
+#### 功能特性
+- 💬 实时流式消息展示
+- 🤔 **深度思考面板**:
+    - 可视化 AI 的中间思考过程 (`reasoning_content`)，通常在模型进行复杂推理或分析时由 API 返回。
+    - 面板可自由拖拽、调整大小和最小化，提供灵活的交互体验。
+- ✨ **正确的流式更新**: 采用替换消息数组的方式确保 Vue 响应式系统能可靠地检测到内容变化，实现真正的流式效果。
+- 🔄 模型切换 (通用对话 / 推理增强)
+- 🗑️ 清空对话
+
+#### 关键实现
+
+- **流式处理**: 在 `handleSend` 方法中，调用 `aiService.streamChat`。`onChunk` 回调函数负责处理接收到的数据块：
+    - **普通内容 (`chunk.content`)**: 通过创建新的消息数组并替换 `messages.value` 来更新最后一条助手消息，确保响应式更新。
+    - **思维链内容 (`chunk.reasoning_content`)**: 追加到 `thinkingContent`，并控制思考面板 (`.thinking-panel`) 的显示与内容更新。
+- **思考面板交互**: 使用原生 `mousedown`, `mousemove`, `mouseup` (以及对应的 `touch` 事件) 实现面板的拖拽和右下角句柄的调整大小功能，并限制移动和缩放范围。
+
+<!-- 流式输出与深度思考面板截图占位符 -->
+![流式输出与深度思考面板截图](assets/deepseek/stream-view-thinking-panel.png) <!-- 请替换为实际截图 -->
+
+#### 示例代码片段 (handleSend 核心逻辑)
+
+**注意**: 此处为简化示例，展示核心的流式更新逻辑，省略了部分错误处理和 UI 交互代码。
 
 ```typescript
-class AIChatService {
-  // 普通对话请求
-  async chat(messages: ChatCompletionRequestMessage[]) {
-    // ... API 调用实现
-  }
-
-  // 流式对话请求
-  async streamChat(
-    messages: ChatCompletionRequestMessage[],
-    onChunk: (chunk: string) => void
-  ) {
-    // ... 流式 API 调用实现
-  }
-
-  // 模型配置更新
-  updateConfig(newConfig: Partial<ChatRequestConfig>) {
-    // ... 配置更新逻辑
-  }
+// 发送消息
+const handleSend = async (message: string) => {
+  // ... existing code ...
 }
 ```
 
-#### **功能特点**
+### 6. ImageGenerationView.vue
 
-1. **支持普通聊天（同步请求）**
-2. **支持推理模型（Reasoner）**
-3. **支持流式响应**
-4. **支持动态更新 API 配置**
-5. **提供错误处理**
+AI 图像生成页面的主视图组件。
 
-#### **枚举 `ModelType`**
+#### 功能特性
+- 🖼️ 输入提示词 (Prompt) 和否定提示词 (Negative Prompt)
+- ⚙️ 配置生成参数：尺寸、风格、生成数量等
+- ✨ 调用 `imageService` 发起图像生成请求
+- 🔄 显示加载状态和进度 (如果 API 支持)
+- 🏞️ 展示生成的图片结果
+- 💾 提供图片下载功能
+- ⏳ (注意: 图像生成可能需要一些时间，具体取决于模型和当前负载)
+- 📜 (可选) 历史记录或收藏功能
 
-| 枚举项     | 说明                            |
-| ---------- | ------------------------------- |
-| `Chat`     | 普通聊天模型（`deepseek-chat`） |
-| `Reasoner` | 推理模型（`deepseek-reasoner`） |
+#### 关键实现
+- **表单交互**: 使用 Element Plus 的表单组件 (`el-form`, `el-input`, `el-select`, `el-slider` 等) 收集用户输入和参数配置。
+- **API 调用**: 在提交表单时，调用 `imageService.generateImage` 方法，传递用户输入的参数。
+- **状态管理**: 使用 `ref` 管理加载状态 (`loading`)、生成的图片 URL 列表 (`imageUrls`)、错误信息 (`error`) 等。
+- **结果展示**: 使用 `v-for` 循环渲染生成的图片，可能使用 `el-image` 组件提供预览和懒加载功能。
+- **下载功能**: 为每个图片提供下载按钮，通过创建 `<a>` 标签并设置 `download` 属性实现。
 
-#### **类方法**
+<!-- AI 图像生成页面截图占位符 -->
+![AI 图像生成页面截图](assets/deepseek/image-generation-ui.png) <!-- 请替换为实际截图 -->
 
-| 方法                                                         | 说明                     |
-| ------------------------------------------------------------ | ------------------------ |
-| `chat(messages: ChatCompletionRequestMessage[])`             | 发送聊天请求（同步）     |
-| `reason(prompt: string)`                                     | 使用 `Reasoner` 模型推理 |
-| `updateConfig(newConfig: Partial<ChatRequestConfig>)`        | 更新配置                 |
-| `streamChat(messages: ChatCompletionRequestMessage[], onChunk: (chunk: string) => void)` | 流式聊天                 |
-| `streamReason(prompt: string, onChunk: (chunk: string) => void)` | 流式推理                 |
+#### 关键参数说明
 
-#### **使用示例**
+- **`prompt` (string, 必需)**: 描述你想要生成的图像内容的核心文本。
+- **`negative_prompt` (string, 可选)**: 描述你不希望在图像中出现的内容或风格，有助于提高生成质量。
+- **`size` (string, 常见如 '1024x1024', '1024x1792', '1792x1024')**: 指定生成图像的尺寸。
+- **`style` (string, 可选, 具体值依赖API)**: 指定图像的艺术风格，例如 'realistic' (写实), 'anime' (动漫), 'illustration' (插画) 等。请参考 DeepSeek API 文档获取支持的风格。
+- **`n` (number, 默认 1)**: 指定一次生成多少张图片。
 
-##### **普通聊天**
+#### 示例代码片段 (简化版调用逻辑)
 
-```js
-const response = await aiService.chat([{ role: 'user', content: '你好，AI！' }])
-console.log(response)  // 输出 AI 回复
-```
+**注意**: 此处为简化示例，展示核心的 API 调用和状态管理逻辑，省略了完整的表单处理和 UI 细节。
 
-##### **流式聊天**
-
-```js
-await aiService.streamChat(
-  [{ role: 'user', content: '请介绍一下 Vue 3' }],
-  (chunk) => {
-    console.log('AI 回复片段:', chunk)
-  }
-)
-```
-
-##### **推理模式**
-
-```js
-const result = await aiService.reason('如何优化前端性能？')
-console.log(result)
-```
-
-##### **更新配置**
-
-```js
-aiService.updateConfig({ temperature: 0.9, max_tokens: 1500 })
-```
-
-
-## 使用指南
-
-### 打字机模式
-```vue
-<ChatContainer
-  title="DeepSeek 打字机模式"
-  :messages="messages"
-  :loading="loading"
-  @send="handleSend"
-/>
-```
-
-### 流式输出模式
-```vue
-<ChatContainer
-  title="DeepSeek 流式输出"
-  :messages="messages"
-  :loading="loading"
-  :stream-mode="true"
-  @send="handleStreamSend"
-/>
-```
+```typescript
+import { ref } from 'vue'
+// ... existing code ...
+### 图像生成
+1.  导航到"AI 图像生成"页面 (`/image`)。
+2.  在输入框中填写**提示词 (Prompt)**，描述你想要生成的图片内容。
+3.  (可选) 填写**否定提示词 (Negative Prompt)**，描述你不希望在图片中出现的内容。
+4.  (可选) 调整生成参数，如**图片尺寸**、**艺术风格**、**生成数量**等 (参考上文"关键参数说明")。
+5.  点击"生成图片"按钮。
+6.  耐心等待加载完成 (生成可能需要几十秒到几分钟)，生成的图片将显示在下方。
+7.  可以将鼠标悬停在图片上，点击下载按钮保存图片。
 
 ## 常见问题
 
@@ -1353,242 +1353,22 @@ aiService.updateConfig({ temperature: 0.9, max_tokens: 1500 })
 - 📊 优化滚动事件
 - 💾 虚拟滚动处理
 
-## 核心代码示例
+### 图像生成相关
 
-### 1. 打字机效果 (TypeWriter.vue)
-```vue
-<template>
-  <span ref="textContainer"></span>
-</template>
+- **Q: 提示 API Key 无效或认证失败？**
+    - A: 请检查 `.env.local` 文件中的 `VITE_DEEPSEEK_IMAGE_API_KEY` 是否正确配置，并且确保该 Key 具有图像生成的权限和足够的额度。
+- **Q: 图片生成很慢或一直处于加载状态？**
+    - A: 图像生成本身是计算密集型任务，耗时较长属于正常现象。如果长时间无响应，请检查网络连接或 DeepSeek 服务状态。也可能是提示词过于复杂或模型负载过高导致。
+- **Q: 生成的图片质量不高或不符合预期？**
+    - A: 尝试优化你的 `prompt`，使其更具体、清晰。合理使用 `negative_prompt` 排除干扰元素。尝试不同的 `style` 参数或调整其他可用参数。
+- **Q: 如何知道支持哪些图片尺寸或风格？**
+    - A: 请查阅 DeepSeek 官方的图像生成 API 文档，获取最新的参数支持列表。
 
-<script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+### 流式输出相关
 
-const props = defineProps<{
-  text: string;
-  speed?: number;
-}>();
-
-const emit = defineEmits<{
-  complete: [];
-}>();
-
-const textContainer = ref<HTMLElement | null>(null);
-let currentIndex = 0;
-let timer: number | null = null;
-
-const startTyping = () => {
-  if (currentIndex < props.text.length) {
-    if (textContainer.value) {
-      textContainer.value.textContent = props.text.slice(0, currentIndex + 1);
-    }
-    currentIndex++;
-    timer = window.setTimeout(startTyping, props.speed || 30);
-  } else {
-    emit("complete");
-  }
-};
-
-onMounted(() => {
-  startTyping();
-});
-
-onUnmounted(() => {
-  if (timer) clearTimeout(timer);
-});
-</script>
-```
-
-### 2. 流式输出 (StreamView.vue)
-```vue
-<script setup lang="ts">
-const handleSend = async (message: string) => {
-  messages.value.push({
-    role: "user",
-    content: message,
-  });
-
-  loading.value = true;
-
-  try {
-    const assistantMessage = {
-      role: "assistant" as const,
-      content: "",
-    };
-    messages.value.push(assistantMessage);
-
-    // 流式回调处理
-    const streamCallback = (chunk: string) => {
-      assistantMessage.content += chunk;
-    };
-
-    await aiService.streamChat(messages.value.slice(0, -1), streamCallback);
-  } catch (error) {
-    ElMessage.error("发送消息失败，请重试");
-    messages.value.pop();
-  } finally {
-    loading.value = false;
-  }
-};
-</script>
-```
-
-### 3. API 服务 (aiService.ts)
-```typescript
-class AIChatService {
-  // 配置定义
-  private config: ChatRequestConfig = {
-    model: "deepseek-chat",
-    temperature: 0.7,
-    max_tokens: 2000,
-    stream: false,
-    system_message: "你是一个友好的中文助手。",
-  };
-
-  // 普通对话请求
-  async chat(messages: ChatCompletionRequestMessage[]) {
-    try {
-      const response = await axios.post(
-        `${API_CONFIG.baseURL}/v1/chat/completions`,
-        {
-          model: this.config.model,
-          messages: [
-            { role: "system", content: this.config.system_message },
-            ...messages,
-          ],
-          temperature: this.config.temperature,
-          max_tokens: this.config.max_tokens,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${API_CONFIG.apiKey}`,
-          },
-        }
-      );
-      return response.data.choices[0].message.content;
-    } catch (error) {
-      throw new Error("聊天服务出错了");
-    }
-  }
-
-  // 流式对话请求
-  async streamChat(
-    messages: ChatCompletionRequestMessage[],
-    onChunk: (chunk: string) => void
-  ) {
-    try {
-      const response = await fetch(
-        `${API_CONFIG.baseURL}/v1/chat/completions`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${API_CONFIG.apiKey}`,
-          },
-          body: JSON.stringify({
-            model: this.config.model,
-            messages: [
-              { role: "system", content: this.config.system_message },
-              ...messages,
-            ],
-            stream: true,
-          }),
-        }
-      );
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-
-      while (reader) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n").filter((line) => line.trim());
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = JSON.parse(line.slice(6));
-            const content = data.choices[0].delta.content;
-            if (content) onChunk(content);
-          }
-        }
-      }
-    } catch (error) {
-      throw new Error("流式聊天服务出错了");
-    }
-  }
-}
-```
-
-### 4. 思考动画 (ChatContainer.vue)
-```vue
-<template>
-  <div v-if="loading" class="thinking-message">
-    <div class="message-content">
-      <el-avatar class="ai-avatar">
-        <el-icon><Service /></el-icon>
-      </el-avatar>
-      <div class="bubble thinking-bubble">
-        <div class="dots-container">
-          <span class="dot"></span>
-          <span class="dot"></span>
-          <span class="dot"></span>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<style scoped>
-.thinking-message {
-  opacity: 0.8;
-  animation: fadeInUp 0.3s ease-out;
-}
-
-.thinking-bubble {
-  min-width: 60px;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px);
-}
-
-.dots-container {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 20px;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  background: #67c23a;
-  border-radius: 50%;
-  opacity: 0.8;
-  animation: bounce 1.4s infinite ease-in-out both;
-}
-
-@keyframes bounce {
-  0%,
-  80%,
-  100% {
-    transform: scale(0);
-  }
-  40% {
-    transform: scale(1);
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 0.8;
-    transform: translateY(0);
-  }
-}
-</style>
-```
+- **Q: 流式输出有时会中断或卡住？**
+    - A: 检查网络连接是否稳定。长时间的流式连接可能会因网络波动中断。可以尝试刷新页面或重新发送请求。也可能是服务端或模型处理时间过长。
+- **Q: 为什么深度思考面板有时不显示？**
+    - A: 深度思考面板仅在 API 返回 `reasoning_content` 时显示。这通常发生在 AI 模型进行复杂推理或需要展示中间步骤的情况下。对于简单的问答，可能不会有思考过程输出。
+- **Q: 流式输出的内容更新不及时或卡顿？**
+    - A: 本项目已采用替换数组的方式优化响应式更新。如果仍感觉卡顿，可能是单次接收的数据块过大或 DOM 更新频繁导致。进一步优化可能需要考虑更高级的技术，如虚拟滚动（如果消息列表非常长）。
