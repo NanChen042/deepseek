@@ -13,7 +13,6 @@ import { loadSlim } from "@tsparticles/slim"; // if you are going to use `loadSl
 
 import App from './App.vue'
 import router from './router'
-import './assets/main.css'
 
 // 添加复制代码函数到window对象
 declare global {

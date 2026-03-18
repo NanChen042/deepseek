@@ -1,207 +1,105 @@
 <template>
-  <!-- 聊天输入组件 -->
-  <div class="chat-input">
-    <div class="input-wrapper">
-      <el-input
-        v-model="message"
-        type="textarea"
-        :maxlength="2000"
-        :autosize="{ minRows: 1, maxRows: 4 }"
-        show-word-limit
-        resize="none"
-        placeholder="输入您的问题...(按住 Shift + Enter 可进行换行)"
-        @keydown.enter.exact.prevent="handleSend"
-        @keydown.enter.shift="handleNewline"
-        :disabled="disabled"
-        class="custom-input"
-      />
-      <el-button
-        type="primary"
-        :loading="disabled"
-        @click="handleSend"
-        :disabled="!message.trim()"
-        class="send-button"
-      >
-        <template #icon>
-          <el-icon><Position /></el-icon>
-        </template>
-        发送
-      </el-button>
+  <div class="w-full shrink-0 px-2 md:px-0">
+    <div class="max-w-3xl mx-auto relative flex flex-col items-center">
+
+      <div :class="[
+          'group relative flex items-end w-full bg-white rounded-[28px] transition-all duration-300 ease-out',
+          'border border-slate-200/80 shadow-[0_4px_24px_-6px_rgba(0,0,0,0.05)]',
+          'focus-within:border-blue-400/50 focus-within:shadow-[0_12px_40px_-10px_rgba(59,130,246,0.12)] focus-within:ring-4 focus-within:ring-blue-500/10'
+        ]">
+        <el-input v-model="message" type="textarea" :autosize="{ minRows: 1, maxRows: 8 }" resize="none" placeholder="发送消息给 DeepSeek... (Shift + Enter 换行)" @keydown.enter.exact.prevent="handleSend" @keydown.enter.shift="handleNewline" :disabled="disabled" class="pro-textarea flex-1" />
+
+        <div class="flex items-center justify-center pr-1.5 pb-[6px] shrink-0">
+          <button @click="handleSend" :disabled="!message.trim() || disabled" :class="[
+              'relative flex items-center justify-center w-10 h-10 rounded-[22px] transition-all duration-300 overflow-hidden',
+              message.trim() && !disabled
+                ? 'bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_2px_10px_rgba(59,130,246,0.3)] hover:shadow-[0_4px_16px_rgba(59,130,246,0.4)] hover:-translate-y-[1px] active:translate-y-0 cursor-pointer' 
+                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+            ]">
+            <el-icon v-if="!disabled" class="text-[18px] transition-transform duration-300 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5">
+              <Position />
+            </el-icon>
+
+            <el-icon v-else class="text-[18px] animate-spin text-slate-500">
+              <Loading />
+            </el-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-3.5 mb-1 opacity-70 hover:opacity-100 transition-opacity">
+        <span class="text-[12px] text-slate-400 font-medium tracking-wide">
+          内容由 AI 生成，请注意甄别其准确性
+        </span>
+      </div>
+
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Position } from '@element-plus/icons-vue'
+import { ref } from "vue";
+import { Position, Loading } from "@element-plus/icons-vue";
 
-// 组件属性定义
 const props = defineProps<{
-  disabled?: boolean    // 禁用状态
-}>()
+  disabled?: boolean;
+}>();
 
-// 定义事件
 const emit = defineEmits<{
-  send: [message: string]  // 发送消息事件
-}>()
+  send: [message: string];
+}>();
 
-// 输入内容
-const message = ref('')
+const message = ref("");
 
-// 发送消息处理
 const handleSend = () => {
-  const trimmedMessage = message.value.trim()
-  if (!trimmedMessage || props.disabled) return
+  const trimmedMessage = message.value.trim();
+  if (!trimmedMessage || props.disabled) return;
 
-  emit('send', trimmedMessage)
-  message.value = ''
-}
+  emit("send", trimmedMessage);
 
-// 处理 Shift+Enter 换行
+  setTimeout(() => {
+    message.value = "";
+  }, 50);
+};
+
 const handleNewline = (e: KeyboardEvent) => {
-  // 允许默认的换行行为
   if (props.disabled) {
-    e.preventDefault()
+    e.preventDefault();
   }
-}
+};
 </script>
 
 <style scoped>
-/* 输入区域容器样式 */
-.chat-input {
-  padding: 16px 24px;
-  border-top: 1px solid #eee;
-  background: #fff;
-  border-radius: 0 0 16px 16px;
-  position: relative;
-}
-
-/* 输入框包装器 */
-.input-wrapper {
-  position: relative;
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-/* 输入框样式优化 */
-.custom-input {
-  flex: 1;
-  transition: all 0.3s ease;
-}
-
-.custom-input :deep(.el-textarea__inner) {
-  padding: 12px 16px;
-  padding-right: 120px; /* 为字数限制留出空间 */
-  font-size: 14px;
-  border-radius: 12px;
-  border: 1px solid #e4e7ed;
-  background: #f9fafb;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
-  transition: all 0.3s ease;
+/* 终极解法：彻底击穿 Element Plus 的默认样式外壳 */
+.pro-textarea :deep(.el-textarea__inner) {
+  box-shadow: none !important;
+  border: none !important;
+  background: transparent !important;
+  /* 【像素级修复】上下内边距固定为 14px，确保单行高度为 52px */
+  padding: 14px 8px 14px 24px;
+  font-size: 15px;
+  /* 行高固定为 24px (15 * 1.6) */
   line-height: 1.6;
-  min-height: 48px;
-  resize: none;
+  color: #1e293b;
+  border-radius: 28px;
+  scrollbar-width: none;
 }
 
-.custom-input :deep(.el-textarea__inner:hover) {
-  background: #fff;
-  border-color: #c0c4cc;
+/* Chrome/Safari/Edge 隐藏滚动条 */
+.pro-textarea :deep(.el-textarea__inner::-webkit-scrollbar) {
+  display: none;
 }
 
-.custom-input :deep(.el-textarea__inner:focus) {
-  background: #fff;
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+/* 占位符颜色调优 */
+.pro-textarea :deep(.el-textarea__inner::placeholder) {
+  color: #94a3b8;
+  font-weight: 400;
 }
 
-/* 字数限制样式 */
-.custom-input :deep(.el-input__count) {
-  position: absolute;
-  right: 12px;
-  bottom: 8px;
-  background: transparent;
-  font-size: 12px;
-  color: #909399;
-  padding: 0;
-  height: auto;
-  line-height: 1;
-  margin: 0;
-}
-
-/* 发送按钮样式 */
-.send-button {
-  padding: 0 24px;
-  font-size: 14px;
-  border-radius: 10px;
-  height: 48px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.send-button:not(:disabled) {
-  background: linear-gradient(135deg, #409eff, #3a8ee6);
-  border: none;
-}
-
-.send-button:not(:disabled):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
-}
-
-.send-button:not(:disabled):active {
-  transform: translateY(0);
-}
-
-.send-button :deep(.el-icon) {
-  font-size: 16px;
-  margin-right: 4px;
-  vertical-align: -2px;
-}
-
-/* 禁用状态样式 */
-.custom-input :deep(.el-textarea__inner:disabled) {
-  background: #f5f7fa;
-  border-color: #e4e7ed;
+/* 禁用状态下的文本框 */
+.pro-textarea :deep(.el-textarea__inner:disabled) {
+  color: #64748b;
   cursor: not-allowed;
-  opacity: 0.7;
-}
-
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .chat-input {
-    padding: 12px 16px;
-  }
-
-  .input-wrapper {
-    gap: 8px;
-  }
-
-  .send-button {
-    padding: 0 16px;
-    height: 48px;
-  }
-
-  .custom-input :deep(.el-textarea__inner) {
-    padding-right: 90px;
-  }
-}
-
-/* 超小屏幕隐藏发送按钮文字 */
-@media (max-width: 480px) {
-  .send-button {
-    padding: 0;
-    width: 48px;
-  }
-
-  .send-button :deep(.el-icon) {
-    margin: 0;
-  }
-
-  .send-button span:not(.el-icon) {
-    display: none;
-  }
+  -webkit-text-fill-color: #64748b;
 }
 </style>

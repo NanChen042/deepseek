@@ -2,15 +2,16 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 // 定义消息类型
-interface ChatCompletionRequestMessage {
+export interface ChatCompletionRequestMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
   name?: string
+  prefix?: boolean
 }
 
 // API 配置
 const API_CONFIG = {
-  baseURL: 'https://api.siliconflow.cn/v1',  // 修改为完整的v1路径
+  baseURL: 'https://api.deepseek.com',  // 修改为官方路径
   apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY
 }
 
@@ -25,8 +26,8 @@ if (!API_CONFIG.apiKey) {
 
 // 模型类型
 export enum ModelType {
-  Chat = 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B',      // DeepSeek-V3
-  Reasoner = 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B' // DeepSeek-R1
+  Chat = 'deepseek-chat',      // DeepSeek-V3
+  Reasoner = 'deepseek-reasoner' // DeepSeek-R1
 }
 
 // 请求配置接口
@@ -162,6 +163,11 @@ class AIChatService {
   // 流式聊天
   async streamChat(messages: ChatCompletionRequestMessage[], onChunk: (chunk: StreamChunk) => void) {
     try {
+      const requestMessages = [
+        { role: 'system', content: this.config.system_message },
+        ...messages
+      ]
+
       const response = await fetch(`${API_CONFIG.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -169,24 +175,21 @@ class AIChatService {
           'Authorization': `Bearer ${API_CONFIG.apiKey}`
         },
         body: JSON.stringify({
-          messages: [
-            { role: 'system', content: this.config.system_message },
-            ...messages
-          ],
+          messages: requestMessages,
           model: this.config.model,
-          temperature: 0.7,
+          temperature: this.config.temperature,
           stream: true
         })
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({}))
         console.error('API Error:', {
           status: response.status,
           statusText: response.statusText,
           error: errorData
         })
-        throw new Error(errorData.message || '聊天服务出错了')
+        throw new Error(errorData.error?.message || errorData.message || '聊天服务出错了')
       }
 
       const reader = response.body?.getReader()
@@ -196,7 +199,7 @@ class AIChatService {
         const { done, value } = await reader.read()
         if (done) break
 
-        const chunk = decoder.decode(value)
+        const chunk = decoder.decode(value, { stream: true })
         const lines = chunk.split('\n').filter(line => line.trim() !== '')
 
         for (const line of lines) {
@@ -207,21 +210,21 @@ class AIChatService {
               const streamChunk: StreamChunk = {}
 
               // 处理普通内容
-              if (data.choices?.[0]?.delta?.content) {
+              if (data.choices?.[0]?.delta?.content !== undefined) {
                 streamChunk.content = data.choices[0].delta.content
               }
 
               // 处理思维链内容
-              if (data.choices?.[0]?.delta?.reasoning_content) {
+              if (data.choices?.[0]?.delta?.reasoning_content !== undefined) {
                 streamChunk.reasoning_content = data.choices[0].delta.reasoning_content
               }
 
               // 只有当有内容才回调
-              if (streamChunk.content || streamChunk.reasoning_content) {
+              if (streamChunk.content !== undefined || streamChunk.reasoning_content !== undefined) {
                 onChunk(streamChunk)
               }
             } catch (e) {
-              console.error('Parse chunk error:', e)
+              console.error('Parse chunk error:', e, line)
             }
           }
         }
@@ -240,48 +243,6 @@ class AIChatService {
       await this.streamChat([{ role: 'user', content: prompt }], onChunk)
     } finally {
       this.config.model = previousConfig
-    }
-  }
-
-  // 开始一个聊天请求
-  async startChat(messages: ChatCompletionRequestMessage[]) {
-    try {
-      // 使用普通的chat请求获取完整响应
-      const response = await this.chat(messages)
-      this.currentResponse = response
-      this.currentIndex = 0
-      this.isGenerating = true
-      return true
-    } catch (error) {
-      throw error
-    }
-  }
-
-  // 模拟获取响应进度
-  async getResponseProgress(): Promise<ResponseProgress> {
-    if (!this.isGenerating) {
-      return {
-        status: 'completed',
-        content: this.currentResponse
-      }
-    }
-
-    // 每次返回一部分内容，模拟打字效果
-    const chunkSize = 4 // 每次返回4个字符
-    const partial = this.currentResponse.slice(0, this.currentIndex + chunkSize)
-    this.currentIndex += chunkSize
-
-    if (this.currentIndex >= this.currentResponse.length) {
-      this.isGenerating = false
-      return {
-        status: 'completed',
-        content: this.currentResponse
-      }
-    }
-
-    return {
-      status: 'processing',
-      partial_content: partial
     }
   }
 }

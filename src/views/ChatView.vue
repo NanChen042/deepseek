@@ -1,11 +1,12 @@
 <template>
-  <div class="chat-view">
+  <div class="p-5 bg-[#f5f7fa] h-[calc(100vh-60px)] overflow-hidden box-border [&_.message-content]:leading-[1.6]">
     <ChatContainer
       title="Deepseek Chat"
       :messages="chatStore.messages"
       :loading="chatStore.loading"
       :prevent-enter-newline="true"
       @send="handleSend"
+      @continue="handleContinue"
       @clear="chatStore.clearChat"
       @modelChange="handleModelChange"
     />
@@ -52,19 +53,16 @@ const handleSend = async (message: string) => {
       })
   }
 }
+
+const handleContinue = async (prefix: string) => {
+  try {
+    await chatStore.continueGenerating(prefix)
+  } catch (error) {
+    ElMessage.error({
+      message: '续写请求失败，请稍后重试',
+      duration: 3000,
+      showClose: true
+    })
+  }
+}
 </script>
-
-<style scoped>
-.chat-view {
-  padding: 20px;
-  background: #f5f7fa;
-  height: calc(100vh - 60px);
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-:deep(.message-content) {
-
-  line-height: 1.6;      /* 设置合适的行高 */
-}
-</style>

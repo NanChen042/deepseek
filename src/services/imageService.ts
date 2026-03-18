@@ -3,13 +3,18 @@ import { ElMessage } from 'element-plus'
 
 // API 配置
 const API_CONFIG = {
-  baseURL: 'https://api.siliconflow.cn/v1',
-  apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY || 'sk-etybbrewlaafxjjqtlgfeqaaskzrmryfndjtjjecyixbsznw'
+  // 开发环境使用 Vite 代理 /api-v1，生产环境直接请求官方接口
+  baseURL: import.meta.env.PROD ? 'https://api.siliconflow.cn/v1' : '/api-v1',
+  // 暂时直接使用硬编码的 key 以排除环境变量加载问题，并进行 trim 处理
+  apiKey: 'sk-gwnnfeqczkatcscqrlvtpnfahdaqkkzsklbugfyabxjqipjj'.trim()
 }
 
-// 添加调试信息
-console.log('Image API Key configured:', !!API_CONFIG.apiKey)
-console.log('Image API Base URL:', API_CONFIG.baseURL)
+// 再次确认 Key 的完整性 (仅显示关键段落)
+if (API_CONFIG.apiKey) {
+  const k = API_CONFIG.apiKey;
+  console.log(`[Diagnostic] Key length: ${k.length}, Starts with: ${k.substring(0, 7)}, Ends with: ${k.substring(k.length - 4)}`);
+}
+console.log('[Diagnostic] Base URL:', API_CONFIG.baseURL);
 
 // Image service for handling image generation operations
 
@@ -77,13 +82,15 @@ class ImageGenerationService {
    */
   async generateImage(params: ImageGenerationParams): Promise<ImageGenerationResponse> {
     try {
-      const requestBody: ImageGenerationRequest = {
+      const requestBody: any = {
         model: 'Kwai-Kolors/Kolors',
         prompt: params.prompt,
         image_size: params.image_size,
-        batch_size: params.batch_size,
-        num_inference_steps: params.num_inference_steps,
-        guidance_scale: params.guidance_scale
+        size: params.image_size, // 兼容某些参数名称
+        batch_size: parseInt(params.batch_size as any) || 1,
+        num_inference_steps: parseInt(params.num_inference_steps as any) || 20,
+        step: parseInt(params.num_inference_steps as any) || 20, // 兼容某些参数名称
+        guidance_scale: parseFloat(params.guidance_scale as any) || 7.5
       }
 
       if (params.negative_prompt) {
@@ -91,40 +98,45 @@ class ImageGenerationService {
       }
 
       if (params.seed !== undefined) {
-        requestBody.seed = params.seed;
+        requestBody.seed = parseInt(params.seed as any);
       }
 
       if (params.image) {
         requestBody.image = params.image;
       }
 
-      console.log('Sending image generation request:', {
+      console.log('%c >>> IMAGE SERVICE LOADED (V4) <<< ', 'background: #ff0000; color: #ffffff; font-size: 24px; font-weight: bold; border: 2px solid white; padding: 10px;');
+      console.log('Sending image generation request via FETCH:', JSON.stringify({
         ...requestBody,
-        image: requestBody.image ? '[BASE64_DATA]' : undefined // 不在日志中显示完整base64
-      })
+        image: requestBody.image ? '[BASE64_DATA]' : undefined
+      }, null, 2));
 
       // 检查API密钥
       if (!API_CONFIG.apiKey) {
-        console.error('API Key not configured')
         throw new Error('API密钥未配置，请检查环境变量')
       }
 
-      const response = await axios.post<ImageGenerationResponse>(
-        `${API_CONFIG.baseURL}/images/generations`,
-        requestBody,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${API_CONFIG.apiKey}`
-          }
-        }
-      )
+      const response = await fetch(`${API_CONFIG.baseURL}/images/generations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_CONFIG.apiKey.trim()}`
+        },
+        body: JSON.stringify(requestBody)
+      });
 
-      console.log('Image generation response:', response.data)
-      return response.data
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Fetch error response:', data);
+        throw new Error(data.error?.message || data.message || `请求失败 (${response.status})`);
+      }
+
+      console.log('Image generation success:', data)
+      return data
     } catch (error: any) {
-      console.error('Image generation error:', error.response?.data || error.message || error)
-      throw new Error(error.response?.data?.error?.message || '图片生成服务出错了')
+      console.error('Image generation critical error:', error);
+      throw error;
     }
   }
 

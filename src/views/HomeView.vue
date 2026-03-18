@@ -1,746 +1,132 @@
 <script setup lang="ts">
-// 添加渐变动画效果
-import { onMounted,ref } from "vue";
-import bg from "@/assets/images/bg.jpg";
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import {
+  ChatLineRound,
+  Lightning,
+  Connection,
+  ArrowRight,
+  DataAnalysis,
+  Position,
+} from "@element-plus/icons-vue";
+
+const router = useRouter();
+
+// 控制各部分的入场动画，营造错落有致的高级感
+const isHeroVisible = ref(false);
+const isFeaturesVisible = ref(false);
+
 onMounted(() => {
-  document.querySelector(".welcome-content")?.classList.add("show");
+  setTimeout(() => {
+    isHeroVisible.value = true;
+  }, 100);
+
+  setTimeout(() => {
+    isFeaturesVisible.value = true;
+  }, 300);
 });
 
-const loading = ref(true);
-const particlesLoaded = async (container: any) => {
-  console.log("Particles container loaded", container);
-  loading.value = false;
-};
-
-const options = {
-  autoPlay: true,
-  background: {
-    color: {
-      value: "#ffffff",
-    },
-    image: `url(${bg} )`,
-    position: "50% 50%",
-    repeat: "no-repeat",
-    size: "cover",
-    opacity: 1,
+const features = [
+  {
+    icon: ChatLineRound,
+    title: "自然流畅对话",
+    description:
+      "具备强大的上下文记忆与逻辑推理能力，像人类一样自然交流，理解你的每一个意图。",
+    color: "text-blue-500",
+    bg: "bg-blue-50",
   },
-  backgroundMask: {
-    composite: "destination-out",
-    cover: {
-      opacity: 1,
-      color: {
-        value: {
-          r: 255,
-          g: 255,
-          b: 255,
-        },
-      },
-    },
-    enable: true,
+  {
+    icon: Lightning,
+    title: "毫秒级极速响应",
+    description:
+      "采用最新一代流式输出技术，拒绝漫长等待，思考与回答同步进行，丝滑体验。",
+    color: "text-cyan-500",
+    bg: "bg-cyan-50",
   },
-  clear: true,
-  defaultThemes: {},
-  delay: 0,
-  fullScreen: {
-    enable: true,
-    zIndex: 0,
+  {
+    icon: Connection,
+    title: "多模态深度理解",
+    description:
+      "不仅仅是文字，更能处理代码、逻辑分析与复杂任务拆解，做你的全能副驾驶。",
+    color: "text-indigo-500",
+    bg: "bg-indigo-50",
   },
-  detectRetina: true,
-  duration: 0,
-  fpsLimit: 120,
-  interactivity: {
-    detectsOn: "window",
-    events: {
-      onClick: {
-        enable: true,
-        mode: "push",
-      },
-      onDiv: {
-        selectors: {},
-        enable: false,
-        mode: {},
-        type: "circle",
-      },
-      onHover: {
-        enable: true,
-        mode: "bubble",
-        parallax: {
-          enable: false,
-          force: 2,
-          smooth: 10,
-        },
-      },
-      resize: {
-        delay: 0.5,
-        enable: true,
-      },
-    },
-    modes: {
-      trail: {
-        delay: 1,
-        pauseOnStop: false,
-        quantity: 1,
-      },
-      attract: {
-        distance: 200,
-        duration: 0.4,
-        easing: "ease-out-quad",
-        factor: 1,
-        maxSpeed: 50,
-        speed: 1,
-      },
-      bounce: {
-        distance: 200,
-      },
-      bubble: {
-        distance: 400,
-        duration: 2,
-        mix: false,
-        opacity: 1,
-        size: 100,
-        divs: {
-          distance: 200,
-          duration: 0.4,
-          mix: false,
-          selectors: {},
-        },
-      },
-      connect: {
-        distance: 80,
-        links: {
-          opacity: 0.5,
-        },
-        radius: 60,
-      },
-      grab: {
-        distance: 100,
-        links: {
-          blink: false,
-          consent: false,
-          opacity: 1,
-        },
-      },
-      push: {
-        default: true,
-        groups: [],
-        quantity: 4,
-      },
-      remove: {
-        quantity: 2,
-      },
-      repulse: {
-        distance: 200,
-        duration: 0.4,
-        factor: 100,
-        speed: 1,
-        maxSpeed: 50,
-        easing: "ease-out-quad",
-        divs: {
-          distance: 200,
-          duration: 0.4,
-          factor: 100,
-          speed: 1,
-          maxSpeed: 50,
-          easing: "ease-out-quad",
-          selectors: {},
-        },
-      },
-      slow: {
-        factor: 3,
-        radius: 200,
-      },
-      particle: {
-        replaceCursor: false,
-        pauseOnStop: false,
-        stopDelay: 0,
-      },
-      light: {
-        area: {
-          gradient: {
-            start: {
-              value: "#ffffff",
-            },
-            stop: {
-              value: "#000000",
-            },
-          },
-          radius: 1000,
-        },
-        shadow: {
-          color: {
-            value: "#000000",
-          },
-          length: 2000,
-        },
-      },
-    },
-  },
-  manualParticles: [],
-  particles: {
-    bounce: {
-      horizontal: {
-        value: 1,
-      },
-      vertical: {
-        value: 1,
-      },
-    },
-    collisions: {
-      absorb: {
-        speed: 2,
-      },
-      bounce: {
-        horizontal: {
-          value: 1,
-        },
-        vertical: {
-          value: 1,
-        },
-      },
-      enable: false,
-      maxSpeed: 50,
-      mode: "bounce",
-      overlap: {
-        enable: true,
-        retries: 0,
-      },
-    },
-    color: {
-      value: "#ffffff",
-      animation: {
-        h: {
-          count: 0,
-          enable: false,
-          speed: 1,
-          decay: 0,
-          delay: 0,
-          sync: true,
-          offset: 0,
-        },
-        s: {
-          count: 0,
-          enable: false,
-          speed: 1,
-          decay: 0,
-          delay: 0,
-          sync: true,
-          offset: 0,
-        },
-        l: {
-          count: 0,
-          enable: false,
-          speed: 1,
-          decay: 0,
-          delay: 0,
-          sync: true,
-          offset: 0,
-        },
-      },
-    },
-    effect: {
-      close: true,
-      fill: true,
-      options: {},
-      type: {},
-    },
-    groups: [],
-    move: {
-      angle: {
-        offset: 0,
-        value: 90,
-      },
-      attract: {
-        distance: 200,
-        enable: false,
-        rotate: {
-          x: 3000,
-          y: 3000,
-        },
-      },
-      center: {
-        x: 50,
-        y: 50,
-        mode: "percent",
-        radius: 0,
-      },
-      decay: 0,
-      distance: {},
-      direction: "none",
-      drift: 0,
-      enable: true,
-      gravity: {
-        acceleration: 9.81,
-        enable: false,
-        inverse: false,
-        maxSpeed: 50,
-      },
-      path: {
-        clamp: true,
-        delay: {
-          value: 0,
-        },
-        enable: false,
-        options: {},
-      },
-      outModes: {
-        default: "out",
-        bottom: "out",
-        left: "out",
-        right: "out",
-        top: "out",
-      },
-      random: false,
-      size: false,
-      speed: 2,
-      spin: {
-        acceleration: 0,
-        enable: false,
-      },
-      straight: false,
-      trail: {
-        enable: false,
-        length: 10,
-        fill: {},
-      },
-      vibrate: false,
-      warp: false,
-    },
-    number: {
-      density: {
-        enable: true,
-        width: 1920,
-        height: 1080,
-      },
-      limit: {
-        mode: "delete",
-        value: 0,
-      },
-      value: 80,
-    },
-    opacity: {
-      value: 1,
-      animation: {
-        count: 0,
-        enable: false,
-        speed: 2,
-        decay: 0,
-        delay: 0,
-        sync: false,
-        mode: "auto",
-        startValue: "random",
-        destroy: "none",
-      },
-    },
-    reduceDuplicates: false,
-    shadow: {
-      blur: 0,
-      color: {
-        value: "#000",
-      },
-      enable: false,
-      offset: {
-        x: 0,
-        y: 0,
-      },
-    },
-    shape: {
-      close: true,
-      fill: true,
-      options: {},
-      type: "circle",
-    },
-    size: {
-      value: {
-        min: 1,
-        max: 30,
-      },
-      animation: {
-        count: 0,
-        enable: false,
-        speed: 5,
-        decay: 0,
-        delay: 0,
-        sync: false,
-        mode: "auto",
-        startValue: "random",
-        destroy: "none",
-      },
-    },
-    stroke: {
-      width: 0,
-    },
-    zIndex: {
-      value: 0,
-      opacityRate: 1,
-      sizeRate: 1,
-      velocityRate: 1,
-    },
-    destroy: {
-      bounds: {},
-      mode: "none",
-      split: {
-        count: 1,
-        factor: {
-          value: 3,
-        },
-        rate: {
-          value: {
-            min: 4,
-            max: 9,
-          },
-        },
-        sizeOffset: true,
-        particles: {},
-      },
-    },
-    roll: {
-      darken: {
-        enable: false,
-        value: 0,
-      },
-      enable: false,
-      enlighten: {
-        enable: false,
-        value: 0,
-      },
-      mode: "vertical",
-      speed: 25,
-    },
-    tilt: {
-      value: 0,
-      animation: {
-        enable: false,
-        speed: 0,
-        decay: 0,
-        sync: false,
-      },
-      direction: "clockwise",
-      enable: false,
-    },
-    twinkle: {
-      lines: {
-        enable: false,
-        frequency: 0.05,
-        opacity: 1,
-      },
-      particles: {
-        enable: false,
-        frequency: 0.05,
-        opacity: 1,
-      },
-    },
-    wobble: {
-      distance: 5,
-      enable: false,
-      speed: {
-        angle: 50,
-        move: 10,
-      },
-    },
-    life: {
-      count: 0,
-      delay: {
-        value: 0,
-        sync: false,
-      },
-      duration: {
-        value: 0,
-        sync: false,
-      },
-    },
-    rotate: {
-      value: 0,
-      animation: {
-        enable: false,
-        speed: 0,
-        decay: 0,
-        sync: false,
-      },
-      direction: "clockwise",
-      path: false,
-    },
-    orbit: {
-      animation: {
-        count: 0,
-        enable: false,
-        speed: 1,
-        decay: 0,
-        delay: 0,
-        sync: false,
-      },
-      enable: false,
-      opacity: 1,
-      rotation: {
-        value: 45,
-      },
-      width: 1,
-    },
-    links: {
-      blink: false,
-      color: {
-        value: "#ffffff",
-      },
-      consent: false,
-      distance: 150,
-      enable: true,
-      frequency: 1,
-      opacity: 1,
-      shadow: {
-        blur: 5,
-        color: {
-          value: "#000",
-        },
-        enable: false,
-      },
-      triangles: {
-        enable: false,
-        frequency: 1,
-      },
-      width: 1,
-      warp: false,
-    },
-    repulse: {
-      value: 0,
-      enabled: false,
-      distance: 1,
-      duration: 1,
-      factor: 1,
-      speed: 1,
-    },
-  },
-  pauseOnBlur: true,
-  pauseOnOutsideViewport: true,
-  responsive: [],
-  smooth: false,
-  style: {},
-  themes: [],
-  zLayers: 100,
-  key: "backgroundMask",
-  name: "Background Mask",
-  motion: {
-    disable: false,
-    reduce: {
-      factor: 4,
-      value: true,
-    },
-  },
-};
+];
 </script>
 
 <template>
-  <div class="particles-container"  v-loading="loading"  element-loading-text="初始化中..."
-  element-loading-background="rgba(255, 255, 255, 0.7)">
+  <div class="relative min-h-screen bg-[#fafcff] overflow-hidden font-sans text-slate-800">
 
-    <vue-particles id="tsparticles"  @particles-loaded="particlesLoaded" :options="options" class="particles">
+    <div class="absolute inset-0 z-0 pointer-events-none">
+      <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+      <div class="absolute -top-[20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-blue-400/20 rounded-full blur-[120px] opacity-70"></div>
+      <div class="absolute top-[20%] -right-[10%] w-[500px] h-[500px] bg-cyan-300/20 rounded-full blur-[100px] opacity-50"></div>
+    </div>
 
-    </vue-particles>
-    <div class="home">
-        <div class="background-gradient"></div>
-        <el-row justify="center" align="middle" class="welcome-section">
-          <el-col :xs="22" :sm="20" :md="16" :lg="14" :xl="12">
-            <div class="welcome-content">
-              <h1 class="title">欢迎使用 Deepseek AI模型</h1>
-              <p class="subtitle">探索 AI 对话的无限可能</p>
-              <div class="features">
-                <div class="feature-item">
-                  <el-icon>
-                    <ChatLineRound />
-                  </el-icon>
-                  <span>智能对话</span>
-                </div>
-                <div class="feature-item">
-                  <el-icon>
-                    <Lightning />
-                  </el-icon>
-                  <span>快速响应</span>
-                </div>
-                <div class="feature-item">
-                  <el-icon>
-                    <Connection />
-                  </el-icon>
-                  <span>深度理解</span>
-                </div>
-              </div>
-              <el-button type="primary" size="large" class="start-button" @click="$router.push('/chat')">
-                开始对话
-                <el-icon class="el-icon--right">
-                  <ArrowRight />
-                </el-icon>
-              </el-button>
-            </div>
-          </el-col>
-        </el-row>
+    <main class="relative z-10 w-full max-w-7xl mx-auto px-6 pt-16 pb-24 md:pt-24 lg:pt-32">
+
+      <div :class="[
+          'max-w-4xl mx-auto text-center transition-all duration-1000 ease-out',
+          isHeroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        ]">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 mb-8 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-medium">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+          </span>
+          Deepseek V3.0 模型现已上线
+        </div>
+
+        <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.15] mb-6">
+          探索 AI 对话的 <br class="hidden sm:block" />
+          <span class="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400 bg-clip-text text-transparent">
+            无限可能
+          </span>
+        </h1>
+
+        <p class="text-lg md:text-xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed">
+          基于最新一代大型语言模型，为您提供更聪明、更快速、更深入的智能对话体验。无论日常工作、灵感创作还是复杂代码，都能得心应手。
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <button @click="router.push('/chat')" class="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold text-white rounded-full bg-blue-600 hover:bg-blue-700 transition-all duration-300 shadow-[0_8px_20px_rgba(37,99,235,0.25)] hover:shadow-[0_12px_25px_rgba(37,99,235,0.35)] hover:-translate-y-0.5">
+            免费开始对话
+            <el-icon class="text-lg transition-transform duration-300 group-hover:translate-x-1">
+              <ArrowRight />
+            </el-icon>
+          </button>
+
+          <button class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 text-base font-semibold text-slate-600 rounded-full bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all duration-300 shadow-sm hover:-translate-y-0.5">
+            <el-icon class="text-lg">
+              <Position />
+            </el-icon>
+            查看开发文档
+          </button>
+        </div>
       </div>
+
+      <div :class="[
+          'mt-24 md:mt-32 grid grid-cols-1 md:grid-cols-3 gap-8 transition-all duration-1000 ease-out delay-200',
+          isFeaturesVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+        ]">
+        <div v-for="(item, index) in features" :key="index" class="group relative p-8 rounded-3xl bg-white border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-1">
+          <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-3xl"></div>
+
+          <div :class="['w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3', item.bg, item.color]">
+            <el-icon class="text-2xl">
+              <component :is="item.icon" />
+            </el-icon>
+          </div>
+
+          <h3 class="text-xl font-bold text-slate-800 mb-3">{{ item.title }}</h3>
+          <p class="text-slate-500 leading-relaxed">{{ item.description }}</p>
+        </div>
+      </div>
+
+    </main>
   </div>
 </template>
 
 <style scoped>
-.particles-container {
-  position: relative;
-  width: 100%;
-  min-height: calc(100vh - 60px);
-}
-
-.particles {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  z-index: 1;
-}
-
-.home {
-  position: relative;
-  min-height: calc(100vh - 60px);
-  z-index: 10;
-}
-
-.background-gradient {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-
-  z-index: 1;
-}
-
-.welcome-section {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  min-height: calc(100vh - 60px);
-  display: flex;
-  align-items: center;
-}
-
-.welcome-content {
-  position: relative;
-  z-index: 20;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 24px;
-  padding: 50px;
-  text-align: center;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: all 0.8s ease-out;
-  box-shadow:
-    0 8px 32px rgba(31, 38, 135, 0.12),
-    0 4px 8px rgba(0, 0, 0, 0.05);
-}
-
-.welcome-content::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 24px;
-  background: linear-gradient(
-    45deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.2) 100%
-  );
-  z-index: -1;
-}
-
-.welcome-content.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.title {
-  font-size: 2.6em;
-  font-weight: 700;
-  background: linear-gradient(135deg, #409EFF 0%, #36cfc9 50%, #1890ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 20px;
-  letter-spacing: -0.3px;
-}
-
-.subtitle {
-  font-size: 1.3em;
-  color: #4a5568;
-  margin-bottom: 35px;
-  font-weight: 400;
-}
-
-.features {
-  display: flex;
-  justify-content: center;
-  gap: 40px;
-  margin-bottom: 40px;
-  flex-wrap: wrap;
-}
-
-.feature-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 14px;
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-}
-
-.feature-item:hover {
-  transform: translateY(-5px);
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow:
-    0 8px 16px rgba(64, 158, 255, 0.15),
-    0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.feature-item .el-icon {
-  font-size: 22px;
-  color: #409eff;
-}
-
-.start-button {
-  padding: 12px 32px;
-  font-size: 1.1em;
-  font-weight: 500;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #409EFF 0%, #36cfc9 100%);
-  border: none;
-  transition: all 0.3s ease;
-}
-
-.start-button:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 8px 20px rgba(64, 158, 255, 0.25),
-    0 4px 8px rgba(54, 207, 201, 0.15);
-}
-
-/* 响应式调整 */
-@media (max-width: 768px) {
-  .welcome-content {
-    padding: 35px;
-  }
-
-  .title {
-    font-size: 2.2em;
-  }
-
-  .subtitle {
-    font-size: 1.1em;
-  }
-}
-
-@media (max-width: 480px) {
-  .welcome-content {
-    padding: 25px;
-    margin: 15px;
-  }
-}
+/* 这里不再需要手写复杂的CSS，全靠 Tailwind 的 utility classes 完成 */
 </style>

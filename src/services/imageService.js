@@ -1,0 +1,111 @@
+// API 配置
+const API_CONFIG = {
+    // 开发环境使用 Vite 代理 /api-v1，生产环境直接请求官方接口
+    baseURL: import.meta.env.PROD ? 'https://api.siliconflow.cn/v1' : '/api-v1',
+    // 暂时直接使用硬编码的 key 以排除环境变量加载问题，并进行 trim 处理
+    apiKey: 'sk-gwnnfeqczkatcscqrlvtpnfahdaqkkzsklbugfyabxjqipjj'.trim()
+};
+// 再次确认 Key 的完整性 (仅显示关键段落)
+if (API_CONFIG.apiKey) {
+    const k = API_CONFIG.apiKey;
+    console.log(`[Diagnostic] Key length: ${k.length}, Starts with: ${k.substring(0, 7)}, Ends with: ${k.substring(k.length - 4)}`);
+}
+console.log('[Diagnostic] Base URL:', API_CONFIG.baseURL);
+// Image service for handling image generation operations
+// 图片尺寸枚举
+export var ImageSize;
+(function (ImageSize) {
+    ImageSize["Square"] = "1024x1024";
+    ImageSize["Portrait"] = "960x1280";
+    ImageSize["Small"] = "768x1024";
+    ImageSize["Tall"] = "720x1440";
+    ImageSize["Medium"] = "720x1280";
+    ImageSize["Wide"] = "1536x1024";
+    ImageSize["Widescreen"] = "2048x1152";
+})(ImageSize || (ImageSize = {}));
+// 默认请求配置
+const DEFAULT_IMAGE_CONFIG = {
+    model: 'Kwai-Kolors/Kolors',
+    prompt: 'an island near sea, with seagulls, moon shining over the sea, light house, boats int he background, fish flying over the sea',
+    image_size: ImageSize.Square,
+    batch_size: 1,
+    num_inference_steps: 20,
+    guidance_scale: 7.5
+};
+/**
+ * 图片生成服务类
+ */
+class ImageGenerationService {
+    /**
+     * 生成图片
+     * @param params 图片生成参数
+     * @returns
+     */
+    async generateImage(params) {
+        try {
+            const requestBody = {
+                model: 'Kwai-Kolors/Kolors',
+                prompt: params.prompt,
+                image_size: params.image_size,
+                size: params.image_size, // 兼容某些参数名称
+                batch_size: parseInt(params.batch_size) || 1,
+                num_inference_steps: parseInt(params.num_inference_steps) || 20,
+                step: parseInt(params.num_inference_steps) || 20, // 兼容某些参数名称
+                guidance_scale: parseFloat(params.guidance_scale) || 7.5
+            };
+            if (params.negative_prompt) {
+                requestBody.negative_prompt = params.negative_prompt;
+            }
+            if (params.seed !== undefined) {
+                requestBody.seed = parseInt(params.seed);
+            }
+            if (params.image) {
+                requestBody.image = params.image;
+            }
+            console.log('%c >>> IMAGE SERVICE LOADED (V4) <<< ', 'background: #ff0000; color: #ffffff; font-size: 24px; font-weight: bold; border: 2px solid white; padding: 10px;');
+            console.log('Sending image generation request via FETCH:', JSON.stringify({
+                ...requestBody,
+                image: requestBody.image ? '[BASE64_DATA]' : undefined
+            }, null, 2));
+            // 检查API密钥
+            if (!API_CONFIG.apiKey) {
+                throw new Error('API密钥未配置，请检查环境变量');
+            }
+            const response = await fetch(`${API_CONFIG.baseURL}/images/generations`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_CONFIG.apiKey.trim()}`
+                },
+                body: JSON.stringify(requestBody)
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                console.error('Fetch error response:', data);
+                throw new Error(data.error?.message || data.message || `请求失败 (${response.status})`);
+            }
+            console.log('Image generation success:', data);
+            return data;
+        }
+        catch (error) {
+            console.error('Image generation critical error:', error);
+            throw error;
+        }
+    }
+    /**
+     * 将本地图片转换为Base64格式
+     * @param file 图片文件
+     * @returns Base64字符串
+     */
+    async fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    }
+}
+// 导出服务实例
+export const imageService = new ImageGenerationService();
+//# sourceMappingURL=imageService.js.map

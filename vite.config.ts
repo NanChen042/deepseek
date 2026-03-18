@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'path'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
@@ -10,6 +11,7 @@ export default defineConfig({
   base: base,
   plugins: [
     vue(),
+    tailwindcss(),
     AutoImport({
       resolvers: [ElementPlusResolver()],
     }),
@@ -20,6 +22,16 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')
+    }
+  },
+  server: {
+    proxy: {
+      '/api-v1': {
+        target: 'https://api.siliconflow.cn/v1',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api-v1/, ''),
+        secure: false
+      }
     }
   }
 })
