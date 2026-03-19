@@ -1,28 +1,36 @@
 <template>
   <div class="relative flex flex-col h-full w-full bg-white overflow-hidden text-slate-800">
 
-    <header class="absolute top-0 left-0 right-0 z-20 flex justify-between items-center px-4 md:px-6 py-3 bg-gradient-to-b from-white via-white/90 to-transparent pb-6 pointer-events-none">
+    <header class="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-md border-b border-slate-100/80 pt-4 pb-3">
+      <div class="max-w-3xl mx-auto px-4 md:px-0 flex items-center justify-between">
 
-      <div class="pointer-events-auto flex items-center gap-2">
-        <el-select v-model="currentModel" class="minimal-select" :disabled="loading">
-          <template #prefix>
-            <span class="flex h-2 w-2 relative ml-1">
-              <span v-if="loading" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2" :class="loading ? 'bg-blue-500' : 'bg-slate-300'"></span>
-            </span>
-          </template>
-          <el-option v-for="(label, model) in modelOptions" :key="model" :label="label" :value="model" />
-        </el-select>
+        <div class="flex items-center gap-2">
+          <el-select v-model="currentModel" class="web-standard-select" :disabled="loading" placement="bottom-start">
+            <template #prefix>
+              <span class="flex h-2 w-2 relative ml-1 mr-1">
+                <span v-if="loading" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2" :class="loading ? 'bg-blue-500' : 'bg-slate-300'"></span>
+              </span>
+            </template>
+            <el-option v-for="(label, model) in modelOptions" :key="model" :label="label" :value="model" />
+          </el-select>
+        </div>
+
+        <div class="flex items-center">
+          <el-tooltip content="清空当前对话" placement="bottom" :show-after="300">
+            <button @click="showClearConfirm" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" aria-label="清空对话">
+              <el-icon class="text-[15px]">
+                <Delete />
+              </el-icon>
+              <span class="hidden sm:inline">清空</span>
+            </button>
+          </el-tooltip>
+        </div>
+
       </div>
-
-      <button @click="showClearConfirm" class="pointer-events-auto flex items-center justify-center w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm" title="清空对话">
-        <el-icon class="text-base">
-          <Delete />
-        </el-icon>
-      </button>
     </header>
 
-    <main class="flex-1 overflow-y-auto w-full pt-20 pb-40 scroll-smooth custom-scrollbar" ref="messagesContainer">
+    <main class="flex-1 overflow-y-auto w-full pt-6 pb-40 scroll-smooth custom-scrollbar" ref="messagesContainer">
       <div class="max-w-3xl mx-auto px-4 md:px-0 flex flex-col gap-8">
 
         <div v-if="messages.length === 0" class="flex flex-col items-center justify-center mt-20 opacity-60">
@@ -74,6 +82,7 @@
 </template>
 
 <script setup lang="ts">
+// ... 这里保留你原本的 script 逻辑，完全不用变
 import { ref, onMounted, nextTick, watch } from "vue";
 import { Delete } from "@element-plus/icons-vue";
 import { ModelType } from "@/services/aiService";
@@ -155,7 +164,7 @@ const handleClear = () => {
 </script>
 
 <style scoped>
-/* 自定义滚动条：极致细化，平时透明 */
+/* 滚动条 */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
@@ -167,34 +176,39 @@ const handleClear = () => {
   border-radius: 4px;
 }
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-  background-color: #e2e8f0;
+  background-color: #cbd5e1;
 }
 
-/* 改造 Element Plus 选择器，使其变成一个现代化的透明胶囊按钮 */
-.minimal-select {
-  width: 160px;
+/* ==========================================
+   标准化 Web 下拉选择器 (类似 ChatGPT 的左上角)
+   ========================================== */
+.web-standard-select {
+  width: auto;
+  min-width: 140px;
 }
-.minimal-select :deep(.el-input__wrapper) {
+/* 移除所有默认的边框和背景，让它变成纯文字按钮的感觉 */
+.web-standard-select :deep(.el-input__wrapper) {
   background-color: transparent !important;
   box-shadow: none !important;
-  border: 1px solid #e2e8f0;
-  border-radius: 9999px; /* 胶囊形状 */
-  padding: 0 16px;
+  border: none !important;
+  padding: 4px 8px;
   cursor: pointer;
+  border-radius: 8px;
   transition: all 0.2s;
 }
-.minimal-select :deep(.el-input__wrapper:hover) {
-  background-color: #f8fafc !important;
-  border-color: #cbd5e1;
+.web-standard-select :deep(.el-input__wrapper:hover),
+.web-standard-select :deep(.el-input__wrapper.is-focus) {
+  background-color: #f1f5f9 !important; /* slate-100 极浅灰底色 */
 }
-.minimal-select :deep(.el-input__inner) {
+/* 放大字体，加粗，符合顶部标题的视觉比重 */
+.web-standard-select :deep(.el-input__inner) {
+  font-size: 16px;
   font-weight: 600;
-  color: #334155;
+  color: #1e293b; /* slate-800 */
   cursor: pointer;
-  text-align: center;
 }
 
-/* 彻底重写 Dialog 样式，去掉所有的原生边框和 header，变成一个纯粹的现代弹窗 */
+/* 弹窗 */
 .minimal-dialog :deep(.el-dialog) {
   border-radius: 20px !important;
   padding: 0;
@@ -203,7 +217,7 @@ const handleClear = () => {
 }
 .minimal-dialog :deep(.el-dialog__header),
 .minimal-dialog :deep(.el-dialog__footer) {
-  display: none !important; /* 直接干掉默认的头和尾 */
+  display: none !important;
 }
 .minimal-dialog :deep(.el-dialog__body) {
   padding: 12px;

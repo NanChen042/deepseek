@@ -1,26 +1,44 @@
 <template>
-  <div class="relative min-h-[calc(100vh-64px)] w-full bg-slate-50/50 overflow-hidden text-slate-800 font-sans">
+  <div class="relative min-h-[calc(100vh-64px)] w-full bg-slate-50/30 overflow-hidden text-slate-800 font-sans">
 
-    <main class="w-full pt-6 pb-32 overflow-y-auto h-[calc(100vh-64px)] custom-scrollbar">
+    <main class="w-full pt-10 pb-56 overflow-y-auto h-[calc(100vh-64px)] custom-scrollbar">
 
-      <div v-if="generatedImages.length === 0 && !loading" class="flex flex-col items-center justify-center min-h-[70vh] z-0 transition-opacity px-4">
-        <div class="w-24 h-24 mb-6 rounded-[2rem] bg-white flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.04)] border border-slate-100 opacity-80">
-          <el-icon class="text-5xl text-indigo-400">
-            <Picture />
-          </el-icon>
-        </div>
+      <div v-if="generatedImages.length === 0 && !loading" class="flex flex-col items-center justify-center min-h-[50vh] z-0 px-4 max-w-4xl mx-auto mt-8 md:mt-12">
 
-        <h2 class="text-3xl font-extrabold text-slate-800 tracking-tight mb-3">唤醒你的想象力</h2>
-        <p class="text-slate-500 text-lg max-w-md text-center leading-relaxed">在下方输入描述，或是点击灵感模板，让 AI 为你绘制不可思议的画面。</p>
+        <div class="relative flex items-center justify-center w-24 h-24 mb-8">
+          <div class="absolute inset-0 bg-indigo-500/10 rounded-full blur-2xl"></div>
 
-        <div class="flex gap-3 mt-10 max-w-3xl flex-wrap justify-center">
-          <div v-for="(tpl, idx) in promptTemplates.slice(0, 4)" :key="idx" @click="applyTemplate(tpl)" class="px-5 py-2.5 rounded-full bg-white border border-slate-200 cursor-pointer hover:border-indigo-300 hover:shadow-md hover:text-indigo-600 transition-all text-sm text-slate-600 font-medium">
-            "{{ tpl.prompt.slice(0, 20) }}..."
+          <div class="relative z-10 flex items-center justify-center w-16 h-16 bg-white shadow-[0_4px_20px_-4px_rgba(79,70,229,0.15)] rounded-2xl border border-slate-100 transition-transform duration-500 hover:scale-110">
+            <el-icon class="text-3xl text-indigo-500">
+              <MagicStick />
+            </el-icon>
+            <div class="absolute top-0 right-0 w-2 h-2 rounded-full bg-indigo-400 -translate-y-1/2 translate-x-1/2 ring-2 ring-white"></div>
           </div>
         </div>
-      </div>
 
-      <div class="w-full px-4 md:px-8 z-10 relative max-w-7xl mx-auto">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl md:text-[2.5rem] font-bold text-slate-800 tracking-tight mb-4">
+            唤醒你的<span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-cyan-500">想象力</span>
+          </h2>
+          <p class="text-slate-500 text-base md:text-lg font-medium">
+            描述你的灵感，或是点击下方模板，让 AI 为你作画。
+          </p>
+        </div>
+
+        <div class="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 px-4">
+          <button v-for="(tpl, idx) in promptTemplates.slice(0, 4)" :key="idx" @click="applyTemplate(tpl)" class="group text-left p-5 md:p-6 rounded-[20px] bg-white/60 border border-slate-200/50 hover:bg-white hover:border-indigo-100 shadow-sm hover:shadow-[0_8px_24px_-8px_rgba(79,70,229,0.15)] transition-all duration-300 hover:-translate-y-1">
+            <div class="text-[13px] font-semibold text-indigo-500/70 mb-2 flex items-center gap-1.5 transition-colors group-hover:text-indigo-500">
+              <el-icon>
+                <CopyDocument />
+              </el-icon> 试试这个
+            </div>
+            <div class="text-[15px] text-slate-600 font-medium leading-relaxed line-clamp-2 transition-colors group-hover:text-slate-900">
+              "{{ tpl.prompt }}"
+            </div>
+          </button>
+        </div>
+      </div>
+      <div class="w-full px-4 md:px-8 z-10 relative max-w-7xl mx-auto mt-4">
         <ImageResultGallery :loading="loading" :progress="progress" :estimated-time="estimatedTime" :generated-images="generatedImages" :generation-time="generationTime" :last-seed="lastSeed" :image-size="formData.image_size" @apply-random-template="applyRandomTemplate" @scroll-to-prompt="scrollToPrompt" @preview="showPreview" @download="downloadImage" @use-seed="useImageSeed($event)" @regenerate="regenerateWithSeed" />
       </div>
     </main>
@@ -121,7 +139,6 @@
 <script setup lang="ts">
 import { ref, reactive } from "vue";
 import { ElMessage } from "element-plus";
-// 引入图标
 import {
   PictureFilled,
   MagicStick,
@@ -162,7 +179,6 @@ const {
   generateImage: performGenerate,
 } = useImageGeneration();
 
-// 生成图片
 const generateImage = async () => {
   if (!formData.prompt.trim()) {
     ElMessage.warning("请输入提示词描述");
@@ -171,15 +187,13 @@ const generateImage = async () => {
   await performGenerate(formData);
 };
 
-// 随机化种子
 const randomizeSeed = () => {
   formData.seed = Math.floor(Math.random() * 1000000000);
   ElMessage.success(`已应用随机种子: ${formData.seed}`);
 };
 
-// 自定义上传处理
 const handleCustomUpload = async (options: any) => {
-  const file = options.raw; // 获取原生文件
+  const file = options.raw;
   if (!file || !beforeImageUpload(file)) return;
   try {
     const base64 = await imageService.fileToBase64(file);
@@ -205,7 +219,6 @@ const beforeImageUpload = (file: File) => {
   return true;
 };
 
-// 使用当前图片的种子
 const useImageSeed = (seed: number | null) => {
   if (seed !== null) {
     formData.seed = parseInt(seed as unknown as string);
@@ -244,7 +257,6 @@ const applyRandomTemplate = () => {
   applyTemplate(promptTemplates[randomIndex]);
 };
 
-// 像素级对齐的滚动
 const scrollToPrompt = () => {
   const promptElement = document.querySelector(".pro-textarea textarea");
   if (promptElement) {
@@ -263,16 +275,15 @@ const regenerateWithSeed = async (
 </script>
 
 <style scoped>
-/* 无边框 Textarea 样式穿透 */
 .pro-textarea :deep(.el-textarea__inner) {
   box-shadow: none !important;
   border: none !important;
   background: transparent !important;
-  padding: 0 4px; /* 增加了一点左右内边距防止文字太贴边 */
+  padding: 0 4px;
   font-size: 16px;
   line-height: 1.6;
   color: #1e293b;
-  scrollbar-width: none; /* 隐藏滚动条让视觉极其干净 */
+  scrollbar-width: none;
 }
 .pro-textarea :deep(.el-textarea__inner::-webkit-scrollbar) {
   display: none;
@@ -282,7 +293,6 @@ const regenerateWithSeed = async (
   font-weight: 400;
 }
 
-/* 胶囊形状的尺寸选择器 */
 .capsule-radio-group :deep(.el-radio-button__inner) {
   border-radius: 9999px !important;
   border: none !important;
@@ -291,7 +301,7 @@ const regenerateWithSeed = async (
   font-size: 13px;
   font-weight: 600;
   color: #64748b;
-  background: #f8fafc; /* 使用更浅的高级灰 */
+  background: #f8fafc;
   box-shadow: none !important;
   transition: all 0.2s;
 }
@@ -301,12 +311,11 @@ const regenerateWithSeed = async (
 }
 .capsule-radio-group
   :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
-  background: #4f46e5 !important; /* Indigo 品牌色 */
+  background: #4f46e5 !important;
   color: white !important;
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25) !important;
 }
 
-/* 参数 Popper 定制 */
 :global(.param-popper.el-popover.el-popper) {
   border: 1px solid rgba(226, 232, 240, 0.8) !important;
   border-radius: 20px !important;
@@ -327,7 +336,6 @@ const regenerateWithSeed = async (
   background-color: white;
 }
 
-/* 页面滚动条美化 */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }

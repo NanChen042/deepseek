@@ -5,16 +5,16 @@ import { ElMessage } from 'element-plus'
 const API_CONFIG = {
   // 开发环境使用 Vite 代理 /api-v1，生产环境直接请求官方接口
   baseURL: import.meta.env.PROD ? 'https://api.siliconflow.cn/v1' : '/api-v1',
-  // 暂时直接使用硬编码的 key 以排除环境变量加载问题，并进行 trim 处理
-  apiKey: 'sk-gwnnfeqczkatcscqrlvtpnfahdaqkkzsklbugfyabxjqipjj'.trim()
+  apiKey: import.meta.env.VITE_SILICONFLOW_API_KEY || ''
 }
 
-// 再次确认 Key 的完整性 (仅显示关键段落)
-if (API_CONFIG.apiKey) {
-  const k = API_CONFIG.apiKey;
-  console.log(`[Diagnostic] Key length: ${k.length}, Starts with: ${k.substring(0, 7)}, Ends with: ${k.substring(k.length - 4)}`);
+/**
+ * 更新 SiliconFlow API KEY
+ * @param key 新的 API KEY
+ */
+export const setSiliconFlowKey = (key: string) => {
+  API_CONFIG.apiKey = key
 }
-console.log('[Diagnostic] Base URL:', API_CONFIG.baseURL);
 
 // Image service for handling image generation operations
 

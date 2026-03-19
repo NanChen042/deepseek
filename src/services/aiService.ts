@@ -12,17 +12,20 @@ export interface ChatCompletionRequestMessage {
 // API 配置
 const API_CONFIG = {
   baseURL: 'https://api.deepseek.com',  // 修改为官方路径
-  apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY
+  apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY || ''
+}
+
+/**
+ * 更新 DeepSeek API Key
+ * @param key 新的 API Key
+ */
+export const setDeepSeekKey = (key: string) => {
+  API_CONFIG.apiKey = key
 }
 
 // 添加调试信息
 console.log('API Key configured:', !!API_CONFIG.apiKey)
 console.log('Base URL:', API_CONFIG.baseURL)
-
-// 可以添加一个检查
-if (!API_CONFIG.apiKey) {
-  console.error('API密钥未配置，请在.env文件中设置VITE_DEEPSEEK_API_KEY')
-}
 
 // 模型类型
 export enum ModelType {
