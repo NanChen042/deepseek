@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import ChatView from '../views/ChatView.vue'
-import StreamView from '../views/StreamView.vue'
 import ImageGenerationView from '../views/ImageGenerationView.vue'
 
 const router = createRouter({
@@ -19,14 +18,6 @@ const router = createRouter({
       path: '/chat',
       name: 'chat',
       component: ChatView,
-      meta: {
-        keepAlive: true
-      }
-    },
-    {
-      path: '/stream',
-      name: 'stream',
-      component: StreamView,
       meta: {
         keepAlive: true
       }

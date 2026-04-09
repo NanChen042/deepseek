@@ -117,9 +117,8 @@ const openSettings = () => {
 
 const navItems = [
   { path: "/", label: "首页" },
-  { path: "/chat", label: "Deepseek 对话" },
-  { path: "/stream", label: "流式输出" },
-  { path: "/image", label: "图像生成" },
+  { path: "/chat", label: "对话" },
+  { path: "/image", label: "创作" },
 ];
 
 watch(
