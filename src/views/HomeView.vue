@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useChatStore } from "@/stores/chat";
 import { Position, Cpu, Search } from "@element-plus/icons-vue";
 import deepseekLogo from "@/assets/deepseeklogo.svg";
+
+const bgCanvas = ref<HTMLCanvasElement | null>(null);
+let animationFrameId: number;
+let resizeHandler: () => void;
 
 const router = useRouter();
 const chatStore = useChatStore();
@@ -30,6 +34,75 @@ const startTypewriter = () => {
 
 onMounted(() => {
   startTypewriter();
+
+  // Canvas Fluid Gradient Logic
+  if (!bgCanvas.value) return;
+  const ctx = bgCanvas.value.getContext("2d");
+  if (!ctx) return;
+
+  let time = 0;
+
+  resizeHandler = () => {
+    if (bgCanvas.value) {
+      bgCanvas.value.width = window.innerWidth;
+      bgCanvas.value.height = window.innerHeight;
+    }
+  };
+
+  window.addEventListener("resize", resizeHandler);
+  resizeHandler();
+
+  // Color Orbs definition (modern tech colors)
+  const orbs = [
+    { r: 59,  g: 130, b: 246, size: 0.9, x: 0.3, y: 0.3, vx: 0.0015, vy: 0.002 },  // Blue
+    { r: 6,   g: 182, b: 212, size: 0.8, x: 0.7, y: 0.7, vx: -0.002, vy: 0.0015 }, // Cyan
+    { r: 99,  g: 102, b: 241, size: 0.85, x: 0.2, y: 0.8, vx: 0.002, vy: -0.0018 }, // Indigo
+    { r: 168, g: 85,  b: 247, size: 0.7, x: 0.8, y: 0.2, vx: -0.0015, vy: -0.002 }, // Purple
+  ];
+
+  const render = () => {
+    time += 1;
+    const width = bgCanvas.value!.width;
+    const height = bgCanvas.value!.height;
+
+    // Fade out previous frame for smooth blending
+    ctx.clearRect(0, 0, width, height);
+    
+    // Add additive blending
+    ctx.globalCompositeOperation = "screen";
+
+    const baseRadius = Math.max(width, height) * 0.4;
+
+    orbs.forEach((orb) => {
+      // Calculate floating positions using sine/cosine waves
+      const px = width * orb.x + Math.sin(time * orb.vx) * width * 0.25;
+      const py = height * orb.y + Math.cos(time * orb.vy) * height * 0.25;
+      const radius = baseRadius * orb.size;
+
+      const gradient = ctx.createRadialGradient(px, py, 0, px, py, radius);
+      gradient.addColorStop(0, `rgba(${orb.r}, ${orb.g}, ${orb.b}, 0.25)`);
+      gradient.addColorStop(0.6, `rgba(${orb.r}, ${orb.g}, ${orb.b}, 0.05)`);
+      gradient.addColorStop(1, `rgba(${orb.r}, ${orb.g}, ${orb.b}, 0)`);
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(px, py, radius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    animationFrameId = requestAnimationFrame(render);
+  };
+
+  render();
+});
+
+onUnmounted(() => {
+  if (resizeHandler) {
+    window.removeEventListener("resize", resizeHandler);
+  }
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+  }
 });
 
 const handleStartChat = () => {
@@ -47,20 +120,11 @@ const handleStartChat = () => {
 
 <template>
   <div class="relative min-h-[calc(100vh-72px)] bg-white flex flex-col items-center justify-center px-6 overflow-hidden">
-    <!-- 高级背景: 流光 (Aurora) + 噪声纹理 -->
+    <!-- 高级背景: Canvas 动态流光 + 噪声纹理 -->
     <div class="absolute inset-0 pointer-events-none overflow-hidden bg-slate-50">
-      <!-- 固态噪点纹理 -->
-      <div class="absolute inset-0 z-0 opacity-[0.015]" style="background-image: url(&quot;data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E&quot;);"></div>
-      
-      <!-- 动态流光层 -->
-      <div class="absolute inset-0 z-0 opacity-60 mix-blend-multiply">
-        <div class="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400/30 blur-[100px] animate-aurora-1"></div>
-        <div class="absolute top-[20%] right-[-10%] w-[50%] h-[70%] rounded-full bg-cyan-300/30 blur-[100px] animate-aurora-2"></div>
-        <div class="absolute bottom-[-20%] left-[20%] w-[60%] h-[50%] rounded-full bg-indigo-300/30 blur-[120px] animate-aurora-3"></div>
-      </div>
-      
-      <!-- 顶部遮罩减淡边框硬度 -->
-      <div class="absolute inset-0 z-0 bg-gradient-to-b from-white/80 via-transparent to-white/80"></div>
+      <canvas ref="bgCanvas" class="absolute inset-0 w-full h-full opacity-80 mix-blend-multiply"></canvas>
+      <div class="absolute inset-0 z-0 bg-noise pointer-events-none"></div>
+      <div class="absolute inset-0 z-0 bg-gradient-to-b from-white/90 via-transparent to-white/90"></div>
     </div>
 
     <!-- 极简内容 -->
@@ -157,53 +221,11 @@ textarea::-webkit-scrollbar {
   animation: blink 1s step-end infinite;
 }
 
-/* 高级 Aurora 流光动画 (20-30s 循环, 缓动平滑) */
-@keyframes aurora-1 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(5%, 10%) scale(1.1);
-  }
-  66% {
-    transform: translate(-5%, 5%) scale(0.9);
-  }
-}
-
-@keyframes aurora-2 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(-10%, -5%) scale(0.95);
-  }
-  66% {
-    transform: translate(5%, -15%) scale(1.05);
-  }
-}
-
-@keyframes aurora-3 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(10%, -10%) scale(1.05);
-  }
-  66% {
-    transform: translate(-10%, 10%) scale(0.95);
-  }
-}
-
-.animate-aurora-1 {
-  animation: aurora-1 24s ease-in-out infinite;
-}
-
-.animate-aurora-2 {
-  animation: aurora-2 28s ease-in-out infinite reverse;
-}
-
-.animate-aurora-3 {
-  animation: aurora-3 32s ease-in-out infinite;
+/* 噪声纹理 (移入CSS解决Vue模版编译报错) */
+.bg-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.02;
+  mix-blend-mode: overlay;
 }
 
 /* 元素入场动画序列 */
