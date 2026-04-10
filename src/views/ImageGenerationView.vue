@@ -1,27 +1,16 @@
 <template>
   <div class="relative min-h-[calc(100vh-64px)] w-full bg-slate-50/30 overflow-hidden text-slate-800 font-sans">
 
-    <main class="w-full pt-10 pb-56 overflow-y-auto h-[calc(100vh-64px)] custom-scrollbar">
+    <main class="w-full pt-16 pb-56 overflow-y-auto h-[calc(100vh-64px)] custom-scrollbar">
 
-      <div v-if="generatedImages.length === 0 && !loading" class="flex flex-col items-center justify-center min-h-[50vh] z-0 px-4 max-w-4xl mx-auto mt-8 md:mt-12">
+      <div v-if="generatedImages.length === 0 && !loading" class="flex flex-col items-center justify-center min-h-[40vh] z-0 px-4 max-w-4xl mx-auto mt-4">
 
-        <div class="relative flex items-center justify-center w-24 h-24 mb-8">
-          <div class="absolute inset-0 bg-indigo-500/10 rounded-full blur-2xl"></div>
-
-          <div class="relative z-10 flex items-center justify-center w-16 h-16 bg-white shadow-[0_4px_20px_-4px_rgba(79,70,229,0.15)] rounded-2xl border border-slate-100 transition-transform duration-500 hover:scale-110">
-            <el-icon class="text-3xl text-indigo-500">
-              <MagicStick />
-            </el-icon>
-            <div class="absolute top-0 right-0 w-2 h-2 rounded-full bg-indigo-400 -translate-y-1/2 translate-x-1/2 ring-2 ring-white"></div>
-          </div>
-        </div>
-
-        <div class="text-center mb-12">
-          <h2 class="text-3xl md:text-[2.5rem] font-bold text-slate-800 tracking-tight mb-4">
-            唤醒你的<span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-cyan-500">想象力</span>
+        <div class="text-center mb-10">
+          <h2 class="text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">
+            AI 图像生成
           </h2>
-          <p class="text-slate-500 text-base md:text-lg font-medium">
-            描述你的灵感，或是点击下方模板，让 AI 为你作画。
+          <p class="text-slate-500 text-base md:text-lg font-medium max-w-xl mx-auto leading-relaxed">
+            输入您的创意描述，或从下方的精选模板中寻找灵感。
           </p>
         </div>
 
