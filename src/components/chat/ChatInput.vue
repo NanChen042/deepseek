@@ -1,34 +1,64 @@
 <template>
-  <div class="w-full shrink-0 px-2 md:px-0">
-    <div class="max-w-3xl mx-auto relative flex flex-col items-center">
+  <div class="w-full shrink-0 px-2 md:px-0 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div class="max-w-4xl mx-auto relative flex flex-col items-center">
 
       <div :class="[
-          'group relative flex items-end w-full bg-white rounded-[28px] transition-all duration-300 ease-out',
-          'border border-slate-200/80 shadow-[0_4px_24px_-6px_rgba(0,0,0,0.05)]',
-          'focus-within:border-blue-400/50 focus-within:shadow-[0_12px_40px_-10px_rgba(59,130,246,0.12)] focus-within:ring-4 focus-within:ring-blue-500/10'
+          'group relative flex flex-col w-full bg-white rounded-2xl transition-all duration-500 ease-out',
+          'border border-slate-200/80 shadow-[0_8px_30px_-6px_rgba(0,0,0,0.05)]',
+          'focus-within:border-blue-400 focus-within:shadow-[0_20px_60px_-10px_rgba(59,130,246,0.12)] focus-within:ring-4 focus-within:ring-blue-500/5',
+          disabled ? 'opacity-70 pointer-events-none' : ''
         ]">
-        <el-input v-model="message" type="textarea" :autosize="{ minRows: 1, maxRows: 8 }" resize="none" placeholder="发送消息给 DeepSeek... (Shift + Enter 换行)" @keydown.enter.exact.prevent="handleSend" @keydown.enter.shift="handleNewline" :disabled="disabled" class="pro-textarea flex-1" />
+        
+        <el-input 
+          v-model="message" 
+          type="textarea" 
+          :autosize="{ minRows: 1, maxRows: 12 }" 
+          resize="none" 
+          placeholder="发送消息给 DeepSeek... (Shift + Enter 换行)" 
+          @keydown.enter.exact.prevent="handleSend" 
+          @keydown.enter.shift="handleNewline" 
+          :disabled="disabled" 
+          class="pro-textarea flex-1 p-1" 
+        />
 
-        <div class="flex items-center justify-center pr-1.5 pb-[6px] shrink-0">
+        <!-- Input Actions Bar -->
+        <div class="flex items-center justify-between px-4 pb-3 mt-1">
+          <div class="flex items-center gap-2">
+             <button 
+                @click="toggleReasoner"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all duration-300"
+                :class="isReasoner ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-slate-50 text-slate-500 border border-slate-100 hover:bg-slate-100'"
+              >
+                <el-icon class="text-sm"><Cpu /></el-icon>
+                深度思考
+              </button>
+              <button 
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold bg-slate-50 text-slate-400 border border-slate-100 hover:bg-slate-100 transition-all duration-300"
+                title="搜索功能即将上线"
+              >
+                <el-icon class="text-sm"><Search /></el-icon>
+                联网搜索
+              </button>
+          </div>
+
           <button @click="handleSend" :disabled="!message.trim() || disabled" :class="[
-              'relative flex items-center justify-center w-10 h-10 rounded-[22px] transition-all duration-300 overflow-hidden',
+              'flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-500',
               message.trim() && !disabled
-                ? 'bg-gradient-to-b from-blue-500 to-blue-600 text-white shadow-[0_2px_10px_rgba(59,130,246,0.3)] hover:shadow-[0_4px_16px_rgba(59,130,246,0.4)] hover:-translate-y-[1px] active:translate-y-0 cursor-pointer' 
-                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-100 hover:scale-105 active:scale-95 cursor-pointer' 
+                : 'bg-slate-50 text-slate-200 cursor-not-allowed'
             ]">
-            <el-icon v-if="!disabled" class="text-[18px] transition-transform duration-300 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5">
+            <el-icon v-if="!disabled" class="text-lg rotate-45">
               <Position />
             </el-icon>
-
-            <el-icon v-else class="text-[18px] animate-spin text-slate-500">
+            <el-icon v-else class="text-lg animate-spin text-slate-400">
               <Loading />
             </el-icon>
           </button>
         </div>
       </div>
 
-      <div class="mt-3.5 mb-1 opacity-70 hover:opacity-100 transition-opacity">
-        <span class="text-[12px] text-slate-400 font-medium tracking-wide">
+      <div class="mt-3 opacity-40 hover:opacity-60 transition-opacity">
+        <span class="text-[11px] text-slate-400 font-medium tracking-wide">
           内容由 AI 生成，请注意甄别其准确性
         </span>
       </div>
@@ -39,17 +69,24 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { Position, Loading } from "@element-plus/icons-vue";
+import { Position, Loading, Cpu, Search } from "@element-plus/icons-vue";
 
 const props = defineProps<{
   disabled?: boolean;
+  isReasoner?: boolean;
 }>();
 
 const emit = defineEmits<{
   send: [message: string];
+  modelChange: [isReasoner: boolean];
 }>();
 
 const message = ref("");
+
+const toggleReasoner = () => {
+  if (props.disabled) return;
+  emit("modelChange", !props.isReasoner);
+};
 
 const handleSend = () => {
   const trimmedMessage = message.value.trim();

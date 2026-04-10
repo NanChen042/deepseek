@@ -1,54 +1,77 @@
 <template>
-  <div class="w-full flex transition-all" :class="[
+  <div class="w-full flex transition-all mb-8" :class="[
     isUser ? 'justify-end' : 'justify-start',
-    isLastMessage ? 'pb-20' : '' 
+    isLastMessage ? 'pb-24' : '' 
   ]">
 
-    <div v-if="isUser" class="relative max-w-[85%] md:max-w-[75%]">
-      <div class="px-5 py-3.5 bg-slate-100 text-slate-800 rounded-3xl rounded-tr-sm text-[15px] leading-relaxed break-words shadow-sm">
+    <!-- User Message: Cleaner style, more subtle -->
+    <div v-if="isUser" class="relative max-w-[85%] md:max-w-[70%]">
+      <div class="px-5 py-3 bg-slate-100/80 text-slate-800 rounded-2xl rounded-tr-sm text-[15.5px] leading-relaxed break-words border border-slate-200/50 shadow-sm">
         {{ content }}
       </div>
     </div>
 
+    <!-- Assistant Message: Premium layout -->
     <div v-else class="flex w-full group">
-
-      <div class="w-8 h-8 md:w-10 md:h-10 rounded-full border border-slate-200 flex items-center justify-center bg-white shadow-sm shrink-0 mt-1 md:mt-0 relative overflow-hidden">
-        <img :src="deepseekLogo" alt="AI Avatar" class="w-5 h-5 md:w-6 md:h-6 object-contain" />
+      <!-- Avatar: Positioned naturally -->
+      <div class="w-8 h-8 md:w-9 md:h-9 rounded-xl border border-slate-200/60 flex items-center justify-center bg-white shadow-sm shrink-0 mt-1 relative overflow-hidden transition-transform group-hover:scale-105">
+        <img :src="deepseekLogo" alt="AI Avatar" class="w-5 h-5 md:w-5.5 md:h-5.5 object-contain" />
       </div>
 
       <div class="flex-1 min-w-0 ml-4 max-w-[calc(100%-3rem)]">
-        <div class="text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2">
+        <div class="text-[13px] font-bold text-slate-400 mb-2 flex items-center gap-2 tracking-wide uppercase">
           DeepSeek
-          <span v-if="loading && isLastMessage" class="w-1.5 h-3 bg-blue-500 animate-pulse"></span>
+          <span v-if="loading && isLastMessage" class="flex gap-1 items-center">
+             <span class="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+             <span class="w-1 h-1 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+             <span class="w-1 h-1 bg-blue-500 rounded-full animate-bounce"></span>
+          </span>
         </div>
 
-        <div v-if="reasoningContent" class="mb-5">
-          <details class="group/details border border-slate-200 rounded-xl bg-slate-50/50 overflow-hidden transition-all duration-300 open:bg-slate-50" :open="loading && isLastMessage">
-            <summary class="flex items-center gap-2 px-4 py-2.5 cursor-pointer list-none select-none text-slate-500 hover:text-slate-700 transition-colors">
-              <el-icon class="text-sm transition-transform duration-300 group-open/details:rotate-90">
-                <ArrowRight />
+        <!-- Premium Reasoning Segment: Inspired by DeepSeek's latest R1 UI -->
+        <div v-if="reasoningContent" class="mb-6 animate-in fade-in slide-in-from-top-3 duration-700">
+          <details 
+            class="group/details border border-slate-200/50 bg-slate-50/50 rounded-2xl overflow-hidden transition-all duration-500 hover:border-blue-200/60 hover:bg-white hover:shadow-[0_8px_30px_rgb(0,0,0,0.02)]" 
+            :open="loading && isLastMessage"
+          >
+            <summary class="flex items-center gap-3 px-5 py-3 cursor-pointer list-none select-none text-slate-500 transition-all duration-300">
+              <div class="relative flex items-center justify-center">
+                <div v-if="loading && isLastMessage" class="absolute inset-0 bg-blue-400/20 rounded-full animate-ping scale-150"></div>
+                <div class="w-6 h-6 flex items-center justify-center rounded-lg bg-white border border-slate-100 shadow-sm text-blue-500 z-10">
+                   <el-icon v-if="loading && isLastMessage" class="text-sm animate-spin-slow"><Loading /></el-icon>
+                   <el-icon v-else class="text-sm"><View /></el-icon>
+                </div>
+              </div>
+              
+              <div class="flex flex-col">
+                <span class="text-[13px] font-bold tracking-tight text-slate-600 group-hover/details:text-blue-600 transition-colors">
+                  {{ loading && isLastMessage ? '深度思考中...' : '深度思考过程已完成' }}
+                </span>
+                <span class="text-[10px] text-slate-400 font-medium leading-none mt-0.5 uppercase tracking-widest">
+                  DeepSeek-R1 Reasoner
+                </span>
+              </div>
+
+              <el-icon class="ml-auto text-xs text-slate-300 transition-transform duration-500 group-open/details:rotate-180">
+                <ArrowDown />
               </el-icon>
-              <span class="text-sm font-medium">深度思考过程</span>
-              <span v-if="loading && isLastMessage" class="text-xs text-slate-400 ml-auto flex items-center gap-1">
-                思考中<span class="animate-bounce">...</span>
-              </span>
             </summary>
 
-            <div class="px-5 pb-4 pt-2 text-sm text-slate-500 border-t border-slate-200/60 mt-1 custom-markdown opacity-90" v-html="renderedReasoning"></div>
+            <div class="px-6 pb-5 pt-2 text-[13.5px] text-slate-500/90 leading-[1.7] custom-markdown border-t border-slate-100/80 mt-1 font-normal selection:bg-blue-50" v-html="renderedReasoning"></div>
           </details>
         </div>
 
-        <div class="text-[15px] text-slate-800 break-words custom-markdown" v-html="renderedContent"></div>
+        <!-- Main Content -->
+        <div class="text-[16px] text-slate-800 leading-[1.8] break-words custom-markdown selection:bg-blue-100" v-html="renderedContent"></div>
 
-        <div class="flex items-center gap-2 mt-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
-          <button @click="handleCopy" class="flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors bg-white shadow-sm md:shadow-none md:bg-transparent" :title="isCopied ? '已复制' : '复制内容'">
+        <!-- Action Buttons -->
+        <div class="flex items-center gap-3 mt-6 opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-2 group-hover:translate-x-0">
+          <button @click="handleCopy" class="flex items-center justify-center w-8 h-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all bg-white border border-slate-100 shadow-sm" :title="isCopied ? '已复制' : '复制回答'">
             <el-icon v-if="isCopied" class="text-green-500"><Select /></el-icon>
-            <el-icon v-else>
-              <CopyDocument />
-            </el-icon>
+            <el-icon v-else class="text-base"><CopyDocument /></el-icon>
           </button>
 
-          <button v-if="!loading && isLastMessage" @click="$emit('continue', content)" class="text-xs font-medium text-slate-500 px-3 py-1.5 rounded-md hover:bg-slate-100 transition-colors bg-white shadow-sm md:shadow-none md:bg-transparent border border-slate-200 md:border-transparent">
+          <button v-if="!loading && isLastMessage" @click="$emit('continue', content)" class="text-[12px] font-bold text-slate-500 px-4 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-all bg-white border border-slate-100 shadow-sm">
             继续生成
           </button>
         </div>
@@ -59,7 +82,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import { CopyDocument, Select, ArrowRight } from "@element-plus/icons-vue";
+import { CopyDocument, Select, ArrowRight, ArrowDown, View, Loading } from "@element-plus/icons-vue";
 import deepseekLogo from "@/assets/deepseeklogo.svg";
 
 import MarkdownIt from "markdown-it";
@@ -246,5 +269,23 @@ details > summary::-webkit-details-marker {
 .custom-markdown :deep(th) {
   background-color: #f8fafc;
   font-weight: 600;
+}
+
+/* Premium Animations */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-in-from-top-3 {
+  from { transform: translateY(-12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 </style>

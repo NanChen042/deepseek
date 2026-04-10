@@ -6,26 +6,23 @@
     <!-- 主对话区域 -->
     <div class="flex-1 flex flex-col min-w-0 bg-white relative">
       <!-- 顶部状态栏: Glassmorphism -->
-      <header class="sticky top-0 z-30 w-full bg-white/70 backdrop-blur-xl border-b border-slate-200/40 py-3">
-        <div class="max-w-4xl mx-auto px-4 flex items-center justify-between">
+      <header class="sticky top-0 z-30 w-full bg-white/70 backdrop-blur-xl border-b border-slate-200/40 py-2.5">
+        <div class="max-w-5xl mx-auto px-4 flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <!-- 侧边栏切换按钮: 重新设计位置与样式 -->
-            <el-tooltip :content="isSidebarOpen ? '收起侧边栏' : '展开侧边栏'" placement="bottom">
-              <button @click="toggleSidebar" class="p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition-all active:scale-95">
-                <el-icon class="text-xl">
-                  <component :is="isSidebarOpen ? Fold : Expand" />
-                </el-icon>
-              </button>
-            </el-tooltip>
+            <!-- 侧边栏切换按钮 -->
+            <button @click="toggleSidebar" class="p-2 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all active:scale-95">
+              <el-icon class="text-xl">
+                <component :is="isSidebarOpen ? Fold : Expand" />
+              </el-icon>
+            </button>
 
-            <div class="w-px h-4 bg-slate-200 mx-1"></div>
+            <div class="w-px h-4 bg-slate-200/60 mx-1"></div>
 
-            <!-- 模型选择器: 重新设计为精美下拉菜单 -->
+            <!-- 当前模型标识: 极简形态 -->
             <el-dropdown trigger="click" @command="handleModelChange" class="model-dropdown">
-              <button class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition-all">
-                <div class="w-2 h-2 rounded-full" :class="currentModel === ModelType.Reasoner ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]'"></div>
-                <span class="text-sm font-bold text-slate-800">{{ modelOptions[currentModel] }}</span>
-                <el-icon class="text-xs text-slate-400"><ArrowDown /></el-icon>
+              <button class="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-100 transition-all group">
+                <span class="text-[14px] font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{{ modelOptions[currentModel] }}</span>
+                <el-icon class="text-xs text-slate-300 group-hover:text-blue-400 transition-colors"><ArrowDown /></el-icon>
               </button>
               <template #dropdown>
                 <el-dropdown-menu class="premium-dropdown-menu">
@@ -57,7 +54,7 @@
 
       <!-- 消息列表 -->
       <main class="flex-1 overflow-y-auto w-full pt-8 pb-40 scroll-smooth custom-scrollbar" ref="messagesContainer">
-        <div class="max-w-3xl mx-auto px-4 md:px-0 flex flex-col gap-10 text-[15px]">
+        <div class="max-w-4xl mx-auto px-4 md:px-6 flex flex-col gap-12 text-[15.5px]">
           
           <!-- 空状态 -->
           <div v-if="messages.length === 0" class="flex flex-col items-center justify-center mt-32 opacity-[0.2] animate-in fade-in zoom-in duration-1000">
@@ -99,9 +96,14 @@
       </main>
 
       <!-- 输入区域 -->
-      <footer class="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-white via-white to-transparent pt-12 pb-8 px-4">
-        <div class="max-w-3xl mx-auto w-full">
-          <ChatInput :disabled="loading" @send="$emit('send', $event)" />
+      <footer class="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-white via-white/80 to-transparent pt-16 pb-6 px-4">
+        <div class="max-w-4xl mx-auto w-full">
+          <ChatInput 
+            :disabled="loading" 
+            :is-reasoner="currentModel === ModelType.Reasoner"
+            @send="$emit('send', $event)" 
+            @modelChange="handleModelChange($event ? ModelType.Reasoner : ModelType.Chat)"
+          />
         </div>
       </footer>
     </div>

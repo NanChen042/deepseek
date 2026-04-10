@@ -53,6 +53,15 @@ const handleContinue = async (prefix: string) => {
 // 处理来自首页的搜索请求
 const checkInitialPrompt = async () => {
   const queryPrompt = route.query.q as string
+  const queryModel = route.query.model as string
+
+  // 处理模型选择
+  if (queryModel === "reasoner") {
+    chatStore.switchModel(ModelType.Reasoner)
+  } else if (queryModel === "chat") {
+    chatStore.switchModel(ModelType.Chat)
+  }
+
   if (queryPrompt && queryPrompt.trim()) {
     // 1. 创建新会话
     chatStore.createSession()
