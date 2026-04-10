@@ -47,10 +47,20 @@ const handleStartChat = () => {
 
 <template>
   <div class="relative min-h-[calc(100vh-72px)] bg-white flex flex-col items-center justify-center px-6 overflow-hidden">
-    <!-- 背景渐变特效 -->
-    <div class="absolute inset-0 pointer-events-none overflow-hidden">
-      <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-blue-50/50 rounded-full blur-[120px] animate-pulse-slow"></div>
-      <div class="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-cyan-50/30 rounded-full blur-[100px]"></div>
+    <!-- 高级背景: 流光 (Aurora) + 噪声纹理 -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden bg-slate-50">
+      <!-- 固态噪点纹理 -->
+      <div class="absolute inset-0 z-0 opacity-[0.015]" style="background-image: url(&quot;data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E&quot;);"></div>
+      
+      <!-- 动态流光层 -->
+      <div class="absolute inset-0 z-0 opacity-60 mix-blend-multiply">
+        <div class="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-blue-400/30 blur-[100px] animate-aurora-1"></div>
+        <div class="absolute top-[20%] right-[-10%] w-[50%] h-[70%] rounded-full bg-cyan-300/30 blur-[100px] animate-aurora-2"></div>
+        <div class="absolute bottom-[-20%] left-[20%] w-[60%] h-[50%] rounded-full bg-indigo-300/30 blur-[120px] animate-aurora-3"></div>
+      </div>
+      
+      <!-- 顶部遮罩减淡边框硬度 -->
+      <div class="absolute inset-0 z-0 bg-gradient-to-b from-white/80 via-transparent to-white/80"></div>
     </div>
 
     <!-- 极简内容 -->
@@ -147,23 +157,53 @@ textarea::-webkit-scrollbar {
   animation: blink 1s step-end infinite;
 }
 
-/* 背景脉动 */
-@keyframes pulse-slow {
-
-  0%,
-  100% {
-    transform: translate(-50%, 0) scale(1);
-    opacity: 0.6;
+/* 高级 Aurora 流光动画 (20-30s 循环, 缓动平滑) */
+@keyframes aurora-1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
   }
-
-  50% {
-    transform: translate(-50%, -5%) scale(1.05);
-    opacity: 0.4;
+  33% {
+    transform: translate(5%, 10%) scale(1.1);
+  }
+  66% {
+    transform: translate(-5%, 5%) scale(0.9);
   }
 }
 
-.animate-pulse-slow {
-  animation: pulse-slow 8s ease-in-out infinite;
+@keyframes aurora-2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-10%, -5%) scale(0.95);
+  }
+  66% {
+    transform: translate(5%, -15%) scale(1.05);
+  }
+}
+
+@keyframes aurora-3 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(10%, -10%) scale(1.05);
+  }
+  66% {
+    transform: translate(-10%, 10%) scale(0.95);
+  }
+}
+
+.animate-aurora-1 {
+  animation: aurora-1 24s ease-in-out infinite;
+}
+
+.animate-aurora-2 {
+  animation: aurora-2 28s ease-in-out infinite reverse;
+}
+
+.animate-aurora-3 {
+  animation: aurora-3 32s ease-in-out infinite;
 }
 
 /* 元素入场动画序列 */
