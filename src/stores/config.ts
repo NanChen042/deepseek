@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import { setDeepSeekKey } from '@/services/aiService'
-import { setSiliconFlowKey } from '@/services/imageService'
+import { setSiliconFlowKey as setChatKey } from '@/services/aiService'
+import { setSiliconFlowKey as setImageKey } from '@/services/imageService'
 
 const STORAGE_KEY = 'deepseek_app_config'
 
@@ -32,17 +32,19 @@ export const useConfigStore = defineStore('config', () => {
 
   const config = ref<AppConfig>(loadConfig())
 
-  // 初始化时同步到服务
-  setDeepSeekKey(config.value.deepseekApiKey)
-  setSiliconFlowKey(config.value.siliconFlowApiKey)
+  // 初始化时同步到服务 (关键修复：均使用 siliconFlowApiKey)
+  setChatKey(config.value.siliconFlowApiKey)
+  setImageKey(config.value.siliconFlowApiKey)
 
-  watch(() => config.value.deepseekApiKey, (newKey) => {
-    setDeepSeekKey(newKey)
+  // 监听 SiliconFlow Key 变化并同步到两个服务
+  watch(() => config.value.siliconFlowApiKey, (newKey) => {
+    setChatKey(newKey)
+    setImageKey(newKey)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config.value))
   })
 
-  watch(() => config.value.siliconFlowApiKey, (newKey) => {
-    setSiliconFlowKey(newKey)
+  // DeepSeek Key 仅保留存储，不用于主要服务
+  watch(() => config.value.deepseekApiKey, () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config.value))
   })
 

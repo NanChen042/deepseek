@@ -1,8 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import ChatView from '../views/ChatView.vue'
-import ImageGenerationView from '../views/ImageGenerationView.vue'
-import DocsView from '../views/DocsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,22 +17,6 @@ const router = createRouter({
       path: '/chat',
       name: 'chat',
       component: ChatView,
-      meta: {
-        keepAlive: true
-      }
-    },
-    {
-      path: '/image',
-      name: 'image',
-      component: ImageGenerationView,
-      meta: {
-        keepAlive: true
-      }
-    },
-    {
-      path: '/docs',
-      name: 'docs',
-      component: DocsView,
       meta: {
         keepAlive: true
       }

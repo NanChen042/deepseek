@@ -1,79 +1,73 @@
-import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
-// 定义消息类型
+export enum ModelType {
+  V3 = 'deepseek-ai/DeepSeek-V3',
+  R1_Distill_7B = 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B',
+  R1_Distill_8B = 'deepseek-ai/DeepSeek-R1-0528-Qwen3-8B',
+  OCR = 'deepseek-ai/DeepSeek-OCR',
+  QwenVL = 'Qwen/Qwen2.5-VL-72B-Instruct',
+  QwenOmni = 'Qwen/Qwen3-Omni-30B-A3B-Instruct',
+  Qwen35_4B = 'Qwen/Qwen3.5-4B',
+  ART = 'art-studio',
+  GLM4V = 'THUDM/glm-4v-9b'
+}
+
+// 定义消息内容块类型
+export interface MultimodalContent {
+  type: 'text' | 'image_url' | 'audio_url' | 'video_url'
+  text?: string
+  image_url?: { url: string; detail?: 'auto' | 'low' | 'high' }
+  audio_url?: { url: string }
+  video_url?: { url: string; detail?: 'auto' | 'low' | 'high'; max_frames?: number; fps?: number }
+}
+
 export interface ChatCompletionRequestMessage {
   role: 'system' | 'user' | 'assistant'
-  content: string
-  name?: string
+  content: string | MultimodalContent[]
   prefix?: boolean
 }
 
-// API 配置
+// API 配置 (统一使用 SiliconFlow 可选路径)
 const API_CONFIG = {
-  baseURL: 'https://api.deepseek.com',  // 修改为官方路径
-  apiKey: import.meta.env.VITE_DEEPSEEK_API_KEY || ''
+  baseURL: 'https://api.siliconflow.cn/v1',
+  apiKey: import.meta.env.VITE_SILICONFLOW_API_KEY || ''
 }
 
 /**
- * 更新 DeepSeek API Key
- * @param key 新的 API Key
+ * 更新 SiliconFlow API Key (对话引擎)
  */
-export const setDeepSeekKey = (key: string) => {
-  API_CONFIG.apiKey = key
-}
-
-// 添加调试信息
-console.log('API Key configured:', !!API_CONFIG.apiKey)
-console.log('Base URL:', API_CONFIG.baseURL)
-
-// 模型类型
-export enum ModelType {
-  Chat = 'deepseek-chat',      // DeepSeek-V3
-  Reasoner = 'deepseek-reasoner' // DeepSeek-R1
+export const setSiliconFlowKey = (key: string) => {
+  if (key) {
+    API_CONFIG.apiKey = key.trim()
+  }
 }
 
 // 请求配置接口
 interface ChatRequestConfig {
-  model: ModelType
+  model: ModelType | string
   temperature?: number
   max_tokens?: number
   stream?: boolean
   system_message?: string
-  presence_penalty?: number
-  frequency_penalty?: number
-  top_p?: number
 }
 
 // 默认配置
 const DEFAULT_CONFIG: ChatRequestConfig = {
-  model: ModelType.Chat,
+  model: ModelType.V3,
   temperature: 0.7,
-  max_tokens: 2000,
-  stream: false,
-  system_message: '你是一个友好的中文助手。'
+  max_tokens: 4000,
+  stream: true,
+  system_message: '你是一个全能的多模态助手，支持文档识别、音视频分析和深度对话。'
 }
 
-interface StreamChunk {
+export interface StreamChunk {
   content?: string
   reasoning_content?: string
-}
-
-// 更新响应接口定义
-interface ChatResponse {
-  choices: Array<{
-    message: {
-      content: string
-      role: string
-    }
-    finish_reason: string
-  }>
-}
-
-interface ResponseProgress {
-  status: 'processing' | 'completed'
-  partial_content?: string
-  content?: string
+  usage?: {
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }
 }
 
 /**
@@ -81,90 +75,20 @@ interface ResponseProgress {
  */
 class AIChatService {
   public config: ChatRequestConfig
-  private currentRequestId: string | null = null
-  private currentResponse: string = ''
-  private currentIndex: number = 0
-  private isGenerating: boolean = false
 
   constructor(config: Partial<ChatRequestConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
   }
 
   /**
-   * 发送聊天请求
-   * @param messages 消息历史
-   * @returns
-   */
-  async chat(messages: ChatCompletionRequestMessage[]) {
-    try {
-      const requestBody = {
-        messages: [
-          { role: 'system', content: this.config.system_message },
-          ...messages
-        ],
-        model: this.config.model,
-        temperature: this.config.temperature,
-        max_tokens: this.config.max_tokens,
-        stream: this.config.stream
-      }
-
-      console.log('Sending request:', requestBody)
-
-      const response = await axios.post<ChatResponse>(
-        `${API_CONFIG.baseURL}/chat/completions`,
-        requestBody,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${API_CONFIG.apiKey}`
-          }
-        }
-      )
-
-      if (!response.data?.choices?.[0]?.message?.content) {
-        throw new Error('API 返回数据格式错误')
-      }
-
-      return response.data.choices[0].message.content
-    } catch (error: any) {
-      console.error('Chat error:', error.response?.data || error)
-      throw new Error(error.response?.data?.error?.message || '聊天服务出错了')
-    }
-  }
-
-  /**
-   * 使用推理模型
-   * @param prompt 提示词
-   * @returns
-   */
-  async reason(prompt: string) {
-    const previousConfig = this.config.model
-    try {
-      this.config.model = ModelType.Reasoner
-      const response = await this.chat([{ role: 'user', content: prompt }])
-      if (!response) {
-        throw new Error('推理服务返回为空')
-      }
-      return response
-    } catch (error: any) {
-      console.error('Reasoning error:', error)
-      throw new Error(error.message || '推理服务出错了')
-    } finally {
-      this.config.model = previousConfig
-    }
-  }
-
-  /**
    * 更新配置
-   * @param newConfig 新配置
    */
   updateConfig(newConfig: Partial<ChatRequestConfig>) {
     this.config = { ...this.config, ...newConfig }
-    console.log('Model updated:', this.config.model)
   }
 
-  // 流式聊天
-  async streamChat(messages: ChatCompletionRequestMessage[], onChunk: (chunk: StreamChunk) => void) {
+  // 流式聊天核心方法
+  async streamChat(messages: ChatCompletionRequestMessage[], onChunk: (chunk: StreamChunk) => void, options: { signal?: AbortSignal } = {}) {
     try {
       const requestMessages = [
         { role: 'system', content: this.config.system_message },
@@ -181,24 +105,24 @@ class AIChatService {
           messages: requestMessages,
           model: this.config.model,
           temperature: this.config.temperature,
-          stream: true
-        })
+          max_tokens: this.config.max_tokens,
+          stream: true,
+          stream_options: { include_usage: true } // 重要：包含 token 统计
+        }),
+        signal: options.signal
       })
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        console.error('API Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData
-        })
         throw new Error(errorData.error?.message || errorData.message || '聊天服务出错了')
       }
 
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
 
-      while (reader) {
+      if (!reader) throw new Error('读取流失败')
+
+      while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
@@ -212,40 +136,36 @@ class AIChatService {
               const data = JSON.parse(line.slice(6))
               const streamChunk: StreamChunk = {}
 
-              // 处理普通内容
+              // 处理内容增量
               if (data.choices?.[0]?.delta?.content !== undefined) {
                 streamChunk.content = data.choices[0].delta.content
               }
 
-              // 处理思维链内容
+              // 处理思维链增量
               if (data.choices?.[0]?.delta?.reasoning_content !== undefined) {
                 streamChunk.reasoning_content = data.choices[0].delta.reasoning_content
               }
 
-              // 只有当有内容才回调
-              if (streamChunk.content !== undefined || streamChunk.reasoning_content !== undefined) {
+              // 处理使用统计
+              if (data.usage) {
+                streamChunk.usage = data.usage
+              }
+
+              if (streamChunk.content !== undefined || streamChunk.reasoning_content !== undefined || streamChunk.usage) {
                 onChunk(streamChunk)
               }
             } catch (e) {
-              console.error('Parse chunk error:', e, line)
+              // 某些中间环节可能产生不完整 JSON
             }
           }
         }
       }
     } catch (error: any) {
-      console.error('Stream Chat API error details:', error)
+      if (error.name === 'AbortError') {
+        return // 正常中断，不报错
+      }
+      console.error('Stream Chat API error:', error)
       throw new Error(error.message || '聊天服务出错了')
-    }
-  }
-
-  // 流式推理
-  async streamReason(prompt: string, onChunk: (chunk: StreamChunk) => void) {
-    const previousConfig = this.config.model
-    try {
-      this.config.model = ModelType.Reasoner
-      await this.streamChat([{ role: 'user', content: prompt }], onChunk)
-    } finally {
-      this.config.model = previousConfig
     }
   }
 }
@@ -253,47 +173,11 @@ class AIChatService {
 // 导出服务实例
 export const aiService = new AIChatService()
 
-// 为了保持向后兼容
-export const chatWithDeepSeek = (messages: ChatCompletionRequestMessage[]) => {
-  return aiService.chat(messages)
-}
-
-// 在 handleModelChange 中添加日志
-const handleModelChange = (model: ModelType) => {
-  console.log('Changing model to:', model)
-  aiService.updateConfig({
-    model,
-    stream: true,
-    system_message: model === ModelType.Reasoner
-      ? '你是一个专注于逻辑推理和问题分析的Deepseek。'
-      : '你是一个友好的中文助手。'
-  })
-  console.log('Current config:', aiService.config)
-  ElMessage.success(`已切换至 ${model === ModelType.Reasoner ? '推理增强模型' : '通用对话模型'}`)
-}
-
-export const sendChatMessage = async (content: string, model: ModelType): Promise<string> => {
-  try {
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: content,
-        model: model
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-
-    const data: ChatResponse = await response.json();
-    // @ts-ignore
-    return data.content;
-  } catch (error) {
-    console.error('Error sending chat message:', error);
-    throw error;
-  }
+/**
+ * 判断模型是否支持多模态 (视觉/语音/视频)
+ */
+export const isVLMModel = (model: string): boolean => {
+  const vlmKeywords = ['vl', 'ocr', 'omni', '3.5-4b']
+  const lowerModel = model.toLowerCase()
+  return vlmKeywords.some(kw => lowerModel.includes(kw))
 }
