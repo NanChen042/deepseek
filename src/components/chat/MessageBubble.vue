@@ -148,15 +148,15 @@
               <!-- Actual Images -->
               <template v-else-if="images && images.length > 0">
                 <div v-for="(img, idx) in images" :key="idx" class="image-item-wrapper group/img shadow-sm hover:shadow-xl hover:shadow-blue-100 transition-all duration-500">
-                  <el-image :src="typeof img === 'string' ? img : img?.url" 
+                  <el-image :src="typeof img === 'string' ? img : (img as any)?.url" 
                           class="w-full h-full object-cover" 
-                          :preview-src-list="images.map(i => typeof i === 'string' ? i : i?.url)" 
+                          :preview-src-list="images.map(i => typeof i === 'string' ? i : (i as any)?.url)" 
                           :initial-index="idx" 
                           preview-teleported
                           lazy 
                           fit="cover" />
                   <div class="image-overlay">
-                    <button @click="handleDownload(typeof img === 'string' ? img : img?.url)" class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 hover:scale-110 transition-all shadow-lg active:scale-95">
+                    <button @click="handleDownload(typeof img === 'string' ? img : (img as any)?.url)" class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 hover:scale-110 transition-all shadow-lg active:scale-95">
                       <el-icon class="text-lg">
                         <Download />
                       </el-icon>
@@ -261,7 +261,7 @@ const props = defineProps<{
   type?: 'text' | 'image';
   content: string;
   reasoningContent?: string;
-  images?: string[];
+  images?: (string | { url: string })[];
   assets?: MessageAsset[];
   progress?: number;
   isUser: boolean;

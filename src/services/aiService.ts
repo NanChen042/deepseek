@@ -9,7 +9,8 @@ export enum ModelType {
   QwenOmni = 'Qwen/Qwen3-Omni-30B-A3B-Instruct',
   Qwen35_4B = 'Qwen/Qwen3.5-4B',
   ART = 'art-studio',
-  GLM4V = 'THUDM/glm-4v-9b'
+  GLM4V = 'THUDM/glm-4v-9b',
+  Reasoner = 'deepseek-ai/DeepSeek-R1'
 }
 
 // 定义消息内容块类型

@@ -170,7 +170,7 @@ interface Message {
   type: "text" | "image";
   content: string;
   reasoning_content?: string;
-  images?: string[];
+  images?: (string | { url: string })[];
   assets?: any[];
   progress?: number;
   loading?: boolean;
@@ -195,7 +195,7 @@ const initialLoad = ref(true);
 const showConfirmDialog = ref(false);
 const isSidebarOpen = ref(true);
 
-const modelOptions = {
+const modelOptions: Record<string, string> = {
   [ModelType.V3]: "DeepSeek V3",
   [ModelType.R1_Distill_7B]: "R1-Distill-Qwen-7B (免费)",
   [ModelType.R1_Distill_8B]: "R1-0528-Qwen3-8B (免费)",
@@ -203,7 +203,9 @@ const modelOptions = {
   [ModelType.QwenOmni]: "Qwen-Omni",
   [ModelType.QwenVL]: "Qwen-VL",
   [ModelType.Qwen35_4B]: "Qwen-3.5-4B",
-  [ModelType.ART]: "AI 艺术绘画"
+  [ModelType.ART]: "AI 艺术绘画",
+  [ModelType.GLM4V]: "GLM-4V-9B",
+  [ModelType.Reasoner]: "DeepSeek R1 Reasoner"
 };
 
 const currentModel = computed(() => chatStore.currentModel || ModelType.V3);

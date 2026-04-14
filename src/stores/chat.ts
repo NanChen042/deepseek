@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch, computed } from 'vue'
+import { ElMessage } from 'element-plus'
 import { aiService, ModelType, ChatCompletionRequestMessage, MultimodalContent, isVLMModel } from '@/services/aiService'
 import { imageService } from '@/services/imageService'
 
